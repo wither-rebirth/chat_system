@@ -1,0 +1,19 @@
+{
+  "env": [
+    "browser",
+    "development",
+    "module"
+  ],
+  "imports": {
+    "tweetnacl": "https://ga.jspm.io/npm:tweetnacl@1.0.3/nacl.js"
+  },
+  "scopes": {
+    "https://ga.jspm.io/": {
+      "buffer": "https://ga.jspm.io/npm:@jspm/core@2.1.0/nodelibs/browser/buffer.js",
+      "crypto": "https://ga.jspm.io/npm:@jspm/core@2.1.0/nodelibs/browser/crypto.js",
+      "fs": "https://ga.jspm.io/npm:@jspm/core@2.1.0/nodelibs/browser/fs.js",
+      "path": "https://ga.jspm.io/npm:@jspm/core@2.1.0/nodelibs/browser/path.js",
+      "process": "https://ga.jspm.io/npm:@jspm/core@2.1.0/nodelibs/browser/process.js"
+    }
+  }
+} 

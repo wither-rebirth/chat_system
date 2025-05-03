@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Internal Chat</title>
+  
+  <!-- Tailwind CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  
+  <!-- Custom styles -->
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/components.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/animations.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/effects/water-ripple.css') }}" rel="stylesheet">
+  
+  <style>
+    .login-gradient {
+      background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-card {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      border-radius: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-15px); }
+      100% { transform: translateY(0px); }
+    }
+    
+    .float-animation {
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    .pulse-animation {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    /* Input focus styles */
+    .input-focus-ring:focus {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      outline: none;
+      border-color: #3B82F6 !important;
+    }
+    
+    /* Enhanced button styles */
+    .btn-primary {
+      background-color: #3B82F6;
+      color: white;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(59, 130, 246, 0.12);
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+    
+    .btn-primary:hover {
+      background-color: #2563EB;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(59, 130, 246, 0.18);
+    }
+    
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+    
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: all 0.6s;
+      z-index: -1;
+    }
+    
+    .btn-primary:hover::before {
+      left: 100%;
+    }
+    
+    /* Social login button enhancements */
+    .social-login-btn {
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .social-login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .social-login-btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      border-radius: 100%;
+      transform: scale(1, 1) translate(-50%);
+      transform-origin: 50% 50%;
+    }
+    
+    .social-login-btn:focus:not(:active)::after {
+      animation: ripple 1s ease-out;
+    }
+    
+    @keyframes ripple {
+      0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+      }
+      20% {
+        transform: scale(25, 25);
+        opacity: 0.3;
+      }
+      100% {
+        opacity: 0;
+        transform: scale(40, 40);
+      }
+    }
+    
+    /* Page transition animations */
+    .page-transition {
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    @keyframes slideOutLeft {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
+    }
+    
+    @keyframes slideInRight {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+    
+    .slide-out-left {
+      animation: slideOutLeft 0.5s forwards ease-in-out;
+    }
+    
+    .slide-in-right {
+      animation: slideInRight 0.5s forwards ease-in-out;
+    }
+    
+    /* Enhanced form styling */
+    .form-input {
+      transition: all 0.3s ease;
+      border: 1px solid #E5E7EB;
+      background-color: #F9FAFB;
+      width: 100%;
+      box-sizing: border-box;
+      height: 50px;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+    }
+    
+    .form-input:focus {
+      border-color: #3B82F6;
+      background-color: white;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      outline: none;
+    }
+    
+    .form-label {
+      font-weight: 500;
+      color: #4B5563;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    
+    /* New styles for input groups with icons */
+    .input-group {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    
+    .input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9CA3AF;
+      pointer-events: none;
+      z-index: 10;
+      transition: all 0.3s ease;
+    }
+    
+    .input-with-icon {
+      padding-left: 48px !important;
+    }
+    
+    .form-input:focus + .input-icon {
+      color: #3B82F6;
+    }
+    
+    /* Flash message styling */
+    .flash-message {
+      border-left: 4px solid transparent;
+      animation: fadeIn 0.5s ease-in-out;
+      border-radius: 0.5rem;
+    }
+    
+    .flash-error {
+      border-left-color: #EF4444;
+      background-color: #FEF2F2;
+    }
+    
+    /* Animation for inputs */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Checkbox styling */
+    .custom-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 1.2rem;
+      height: 1.2rem;
+      border: 2px solid #D1D5DB;
+      border-radius: 0.25rem;
+      background-color: white;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    
+    .custom-checkbox:checked {
+      background-color: #3B82F6;
+      border-color: #3B82F6;
+    }
+    
+    .custom-checkbox:checked::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 2px;
+      width: 5px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    
+    .custom-checkbox:focus {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      outline: none;
+    }
+    
+    /* Social login section */
+    .social-divider {
+      position: relative;
+      text-align: center;
+      margin: 1.5rem 0;
+    }
+    
+    .social-divider::before,
+    .social-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: calc(50% - 3rem);
+      height: 1px;
+      background-color: #E5E7EB;
+    }
+    
+    .social-divider::before {
+      left: 0;
+    }
+    
+    .social-divider::after {
+      right: 0;
+    }
+    
+    .social-text {
+      display: inline-block;
+      padding: 0 1rem;
+      background-color: white;
+      position: relative;
+      color: #6B7280;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+
+<body class="h-screen overflow-hidden font-sans bg-gray-50 text-gray-800 transition-all duration-200">
+  <div class="flex h-full">
+    <!-- Left panel with branding -->
+    <div id="waterPanel" class="hidden md:flex md:w-1/2 login-gradient text-white p-8 flex-col justify-between relative overflow-hidden">
+      <!-- Water effect layer -->
+      <div class="water-surface"></div>
+      
+      <!-- Decorative elements -->
+      <div class="absolute top-0 left-0 w-full h-full">
+        <div class="absolute top-10 left-10 w-64 h-64 bg-white opacity-5 rounded-full float-animation" style="animation-delay: 0s;"></div>
+        <div class="absolute bottom-10 right-10 w-40 h-40 bg-white opacity-5 rounded-full float-animation" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/3 right-1/4 w-24 h-24 bg-white opacity-5 rounded-full float-animation" style="animation-delay: 2s;"></div>
+      </div>
+      
+      <!-- Logo and branding -->
+      <div id="brandingText" class="relative z-10">
+        <div class="flex items-center space-x-3 mb-8">
+          <div class="w-12 h-12 rounded-xl bg-blue-800 shadow-lg flex items-center justify-center text-xl font-bold overflow-hidden pulse-animation">
+            <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Internal Chat" class="w-full h-full object-cover p-2" onerror="this.outerHTML='I'"/>
+          </div>
+          <div class="text-2xl font-bold">Internal Chat</div>
+        </div>
+        <h1 class="text-4xl font-bold mb-6 leading-tight">Team communication, <br/>reimagined.</h1>
+        <p class="text-lg text-blue-100 max-w-md opacity-90">Secure, efficient, and beautifully designed for your team's workflow.</p>
+      </div>
+      
+      <!-- Features list -->
+      <div class="relative z-10 space-y-4">
+        <div class="flex items-center space-x-4 group">
+          <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg transform transition-transform group-hover:scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <span class="text-lg">End-to-end encryption</span>
+        </div>
+        <div class="flex items-center space-x-4 group">
+          <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg transform transition-transform group-hover:scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <span class="text-lg">Real-time messaging</span>
+        </div>
+        <div class="flex items-center space-x-4 group">
+          <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg transform transition-transform group-hover:scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <span class="text-lg">Resource management</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right panel with login form -->
+    <div class="w-full md:w-1/2 h-full flex items-center justify-center p-6 bg-gradient-to-b from-white to-gray-50">
+      <div class="w-full max-w-md fade-in-up" style="animation-duration: 0.8s;">
+        <!-- Small logo for mobile view -->
+        <div class="md:hidden flex items-center justify-center mb-8">
+          <div class="w-14 h-14 rounded-xl bg-blue-600 shadow-lg flex items-center justify-center text-xl font-bold overflow-hidden">
+            <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Internal Chat" class="w-full h-full object-cover p-2" onerror="this.outerHTML='I'"/>
+          </div>
+        </div>
+        
+        <!-- Login card -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 login-card border border-gray-100 hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
+          <!-- Form header with tabs -->
+          <div class="flex flex-col mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h2>
+            <p class="text-gray-600">Please sign in to your account to continue</p>
+          </div>
+          
+          <!-- Login form -->
+          <form action="{{ url_for('auth.login') }}" method="post" id="loginForm" class="space-y-6">
+            <!-- CSRF protection -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                {% for message in messages %}
+                  <div class="flash-message flash-error flex items-start p-4 rounded-md mb-4 text-red-600 shadow-sm">
+                    <div class="mr-3 flex-shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>{{ message }}</div>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            
+            <div class="mb-5">
+              <label class="form-label text-sm font-medium" for="username">Email or Username</label>
+              <div class="relative">
+                <input type="text" id="username" name="username" placeholder="Enter your email or username" class="form-input input-with-icon w-full px-5 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required>
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mb-5">
+              <label class="form-label text-sm font-medium" for="password">Password</label>
+              <div class="relative">
+                <input type="password" id="password" name="password" placeholder="Enter your password" class="form-input input-with-icon w-full px-5 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required>
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between mb-6">
+              <label class="flex items-center">
+                <input type="checkbox" name="remember" class="custom-checkbox">
+                <span class="ml-2 text-sm text-gray-600">Remember me</span>
+              </label>
+              <a href="{{ url_for('auth.forgot_password') }}" class="text-sm text-blue-500 hover:text-blue-600 transition-colors hover:underline" id="forgotPasswordLink">Forgot password?</a>
+            </div>
+            
+            <button type="submit" class="btn-primary w-full py-3 font-medium rounded-xl transition-all focus:outline-none text-white focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hover:shadow-lg">
+              Sign In
+            </button>
+          </form>
+          
+          <!-- Divider -->
+          <div class="social-divider my-6">
+            <span class="social-text">Or continue with</span>
+          </div>
+          
+          <!-- Social login buttons -->
+          <div class="grid grid-cols-3 gap-4 mt-2">
+            <button class="social-login-btn flex justify-center items-center py-3 px-4 border border-gray-200 rounded-xl shadow-sm bg-white hover:bg-gray-50 transition-all">
+              <svg class="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.167 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.605-3.369-1.343-3.369-1.343-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.699 1.028 1.592 1.028 2.683 0 3.841-2.337 4.687-4.565 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.481C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z" />
+              </svg>
+            </button>
+            <button class="social-login-btn flex justify-center items-center py-3 px-4 border border-gray-200 rounded-xl shadow-sm bg-white hover:bg-gray-50 transition-all">
+              <svg class="h-5 w-5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.593 1.323-1.325V1.325C24 .593 23.407 0 22.675 0z" />
+              </svg>
+            </button>
+            <button class="social-login-btn flex justify-center items-center py-3 px-4 border border-gray-200 rounded-xl shadow-sm bg-white hover:bg-gray-50 transition-all">
+              <svg class="h-5 w-5 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.498 0 2.866.549 3.921 1.453l2.814-2.814A9.969 9.969 0 0012.545 2C7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" />
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Register link -->
+          <div class="text-center mt-8">
+            <span class="text-gray-600">Don't have an account?</span>
+            <a href="{{ url_for('auth.register') }}" class="text-blue-500 hover:text-blue-600 font-medium ml-1 transition-colors hover:underline" id="createAccountLink">Create account</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Script references -->
+  <script src="{{ url_for('static', filename='js/effects/water-ripple.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ui-effects.js') }}"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Auto focus first input field
+      const firstInput = document.querySelector('input[type="text"]');
+      if (firstInput) {
+        setTimeout(() => {
+          firstInput.focus();
+        }, 500);
+      }
+      
+      // Add animation to error messages
+      const flashMessages = document.querySelectorAll('.flash-message');
+      flashMessages.forEach(message => {
+        message.addEventListener('click', function() {
+          this.style.opacity = '0';
+          setTimeout(() => {
+            this.remove();
+          }, 300);
+        });
+        
+        // Auto hide after 5 seconds
+        setTimeout(() => {
+          message.style.opacity = '0';
+          setTimeout(() => {
+            message.remove();
+          }, 300);
+        }, 5000);
+      });
+      
+      // Add ripple effect to buttons
+      const buttons = document.querySelectorAll('button, .social-login-btn');
+      buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          const x = e.clientX - this.getBoundingClientRect().left;
+          const y = e.clientY - this.getBoundingClientRect().top;
+          
+          const ripple = document.createElement('span');
+          ripple.classList.add('ripple');
+          ripple.style.left = `${x}px`;
+          ripple.style.top = `${y}px`;
+          
+          this.appendChild(ripple);
+          
+          setTimeout(() => {
+            ripple.remove();
+          }, 600);
+        });
+      });
+      
+      // Add floating effect to form card
+      const loginCard = document.querySelector('.login-card');
+      if (loginCard) {
+        loginCard.addEventListener('mousemove', function(e) {
+          const rect = this.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          
+          const xPercent = (x / rect.width - 0.5) * 4;
+          const yPercent = (y / rect.height - 0.5) * 4;
+          
+          this.style.transform = `perspective(1000px) rotateX(${-yPercent}deg) rotateY(${xPercent}deg) translateY(-5px)`;
+        });
+        
+        loginCard.addEventListener('mouseleave', function() {
+          this.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(-5px)';
+        });
+      }
+    });
+  </script>
+  
+  <style>
+    .ripple {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      transform: scale(0);
+      animation: ripple-effect 0.6s linear;
+      pointer-events: none;
+    }
+    
+    @keyframes ripple-effect {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+  </style>
+</body>
+</html> 

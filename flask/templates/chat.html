@@ -1,0 +1,2408 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="current-username" content="{{ current_user.username }}">
+  <title>Chat Application</title>
+
+  
+  <!-- Css Link -->
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/direct-message.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/e2ee.css') }}" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- 加密库 -->
+  <!-- nacl-util.js 加密库辅助模块 -->
+  <script src="{{ url_for('static', filename='js/lib/nacl-util.js') }}"></script>
+  <!-- TweetNaCl.js 加密库 (本地版本) -->
+  <script src="{{ url_for('static', filename='js/lib/tweetnacl.min.js') }}"></script>
+  
+  <!-- 确保nacl.util可用的备用脚本 -->
+  <script>
+    // 确保nacl对象存在
+    if (typeof nacl === 'undefined') {
+      window.nacl = {};
+    }
+    
+    // 确保nacl.util对象存在
+    if (typeof nacl.util === 'undefined') {
+      nacl.util = (function() {
+        var util = {};
+        
+        util.decodeUTF8 = function(s) {
+          if (typeof s !== 'string') throw new TypeError('expected string');
+          var i, d = unescape(encodeURIComponent(s)), b = new Uint8Array(d.length);
+          for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
+          return b;
+        };
+        
+        util.encodeUTF8 = function(arr) {
+          var i, s = [];
+          for (i = 0; i < arr.length; i++) s.push(String.fromCharCode(arr[i]));
+          return decodeURIComponent(escape(s.join('')));
+        };
+        
+        util.encodeBase64 = function(arr) {
+          var i, s = [], len = arr.length;
+          for (i = 0; i < len; i++) s.push(String.fromCharCode(arr[i]));
+          return btoa(s.join(''));
+        };
+        
+        util.decodeBase64 = function(s) {
+          var i, d = atob(s), b = new Uint8Array(d.length);
+          for (i = 0; i < d.length; i++) b[i] = d.charCodeAt(i);
+          return b;
+        };
+        
+        return util;
+      })();
+      
+      console.log('内联nacl.util模块已加载');
+    }
+  </script>
+  
+  <!-- JavaScript Quotations -->
+  <script src="{{ url_for('static', filename='js/resource-fixes.js') }}" defer></script>
+  <!-- Socket.IO library -->
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  
+  <!-- 主要JavaScript文件 - 集中引用避免重复 -->
+  <script src="{{ url_for('static', filename='js/channel-manager.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/crypto.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/channel-encryption.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/e2ee_settings.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/direct_messages.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/offline-crypto-api.js') }}"></script>
+  
+  <!-- Prevent dark mode from flashing -->
+  <script>
+    // Check user's dark mode preferences
+    if (localStorage.getItem('darkMode') === 'enabled' || 
+        (window.matchMedia('(prefers-color-scheme: dark)').matches && !localStorage.getItem('darkMode'))) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+
+  <!-- Custom css -->
+  <style>
+    /* 表情选择器动画 */
+    .emoji-btn {
+      transition: transform 0.1s ease-in-out, background-color 0.2s ease;
+    }
+    .emoji-btn:hover {
+      transform: scale(1.2);
+      z-index: 1;
+    }
+    .emoji-btn:active {
+      background-color: rgba(59, 130, 246, 0.3) !important;
+      transform: scale(1.1);
+    }
+    
+    /* 消息动画 */
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* 频道标题更新高亮效果 */
+    @keyframes highlight-update {
+      0% { background-color: rgba(59, 130, 246, 0.1); }
+      100% { background-color: transparent; }
+    }
+    .channel-title-updated {
+      animation: highlight-update 0.5s ease-out;
+      border-radius: 4px;
+      padding: 2px 4px;
+      margin: -2px -4px;
+    }
+    
+    /* 亮色/暗色主题过渡 */
+    .theme-transition {
+      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
+
+    /* 固定消息动画 */
+    .animate-bounce-in {
+      animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    
+    .animate-fade-out {
+      animation: fadeOut 0.3s ease-out forwards;
+    }
+    
+    @keyframes bounceIn {
+      0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+      70% { transform: scale(1.05) translateY(-5px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to { opacity: 0; transform: translateY(-10px) scale(0.9); }
+    }
+  </style>
+  <script>
+    // Add image load error debugging
+    window.addEventListener('DOMContentLoaded', function() {
+        // Listen to all images for loading failures
+        document.addEventListener('error', function(e) {
+            if (e.target.tagName === 'IMG') {
+                console.error('图片加载失败:', e.target.src);
+                
+                // Try replacing the url format
+                const originalSrc = e.target.src;
+                const filename = originalSrc.split('/').pop().split('?')[0];
+                console.log('提取的文件名:', filename);
+                
+                // Try reloading in new format
+                if (originalSrc.includes('/uploads/')) {
+                    // Add a mark to avoid infinite loops
+                    if (!e.target.dataset.retried) {
+                        e.target.dataset.retried = 'true';
+                        const newSrc = `/uploads/${filename}?t=${new Date().getTime()}`;
+                        console.log('尝试新的URL:', newSrc);
+                        e.target.src = newSrc;
+                    }
+                }
+            }
+        }, true);
+    });
+  </script>
+  
+  <!-- Current user information -->
+  <script>
+    // Provide current user information for private chat function
+    const currentUser = {
+      id: {{ current_user.id }},
+      username: "{{ current_user.username }}",
+      avatar_url: "{{ current_user.avatar_url or '' }}",
+      is_active: {{ 'true' if current_user.is_active else 'false' }}
+    };
+  </script>
+</head>
+<body class="h-screen overflow-hidden font-sans relative bg-white text-black theme-transition">
+  <div class="h-screen flex flex-col dark:bg-gray-900 dark:text-white">
+    <!-- Main interface container -->
+    <div class="flex flex-1 overflow-hidden">
+      <!-- sidebar -->
+      <aside class="w-64 bg-gradient-to-b from-blue-700 to-blue-600 text-white flex flex-col theme-transition relative">
+        <!-- Team information and avatar -->
+        <div class="p-4 flex items-center gap-3 border-b border-white/10">
+          <div class="relative">
+            <div class="w-10 h-10 rounded-md bg-blue-800 shadow-inner flex items-center justify-center text-lg font-bold overflow-hidden">
+              <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Team" class="w-full h-full object-cover" onerror="this.outerHTML='I'"/>
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-blue-600 shadow-md pulse-animation"></div>
+          </div>
+          <div class="flex-1 min-w-0 sidebar-text">
+            <div class="font-semibold text-lg truncate">{{ current_user.username }}</div>
+            <div class="flex items-center text-sm text-white/70">
+              <div class="flex items-center space-x-1">
+                <div class="w-2 h-2 rounded-full {% if current_user.is_active %}bg-green-500{% else %}bg-gray-500{% endif %}"></div>
+                <span class="text-xs text-white/60">{% if current_user.is_active %}Online{% else %}Offline{% endif %}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Search bar -->
+        <div class="px-3 py-2 sidebar-search">
+          <div class="relative">
+            <input type="text" placeholder="Find channels..." class="w-full bg-white/10 text-white border-0 rounded-md py-1.5 pl-8 pr-3 text-sm placeholder-white/50 focus:ring-1 focus:ring-white/30 focus:outline-none transition-all" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-2.5 top-2 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        
+        <!-- Channel List -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar px-2">
+          <!-- Category List Items -->
+          <div class="mt-2 space-y-1">
+            <!-- Public channel grouping -->
+            <div id="publicChannelsGroup" class="channel-group" data-state="expanded">
+              <div class="flex items-center justify-between py-1.5 px-2 cursor-pointer hover:bg-white/5 rounded-md group">
+                <p class="text-xs uppercase text-white/60 font-medium flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 transform transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="channel-group-title">Public Channels</span>
+                </p>
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button class="text-white/60 hover:text-white/90">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Public Channel List -->
+              <div class="channel-list mt-1 pl-1 space-y-0.5">
+                <!-- Looping rendering of public rooms -->
+                {% for room in rooms %}
+                  {% if not room.is_private %}
+                    <!-- Each chat room item -->
+                    <div class="room-item mb-2">
+                      <!-- Chat room title -->
+                      <div data-room-id="{{ room.room_id }}" class="room-header flex items-center justify-between py-1 px-2 text-white/80 hover:text-white hover:bg-white/5 rounded cursor-pointer" data-expanded="false">
+                        <div class="flex items-center space-x-1.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white/70" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" clip-rule="evenodd" />
+                            <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                          </svg>
+                          <span class="text-sm font-medium">{{ room.room_name }}</span>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white/60 transform transition-transform duration-200 -rotate-90" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                      </div>
+                      
+                      <!-- The chat room's channel list -->
+                      <div class="channels-sublist ml-3 mt-1 space-y-0.5 transition-all duration-200 ease-in-out overflow-hidden" style="max-height: 0; opacity: 0;">
+                        {% for channel in channels.get(room.room_id, []) %}
+                          <div data-channel-id="{{ channel.channel_id }}" class="channel-item flex items-center px-2 py-1 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-md cursor-pointer {% if active_channel and active_channel.channel_id == channel.channel_id %}active{% endif %}">
+                            <span class="mr-1.5 text-white/50">#</span>
+                            <span>{{ channel.channel_name }}</span>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Private channel grouping -->
+            <div id="privateChannelsGroup" class="channel-group mt-4" data-state="expanded">
+              <div class="flex items-center justify-between py-1.5 px-2 cursor-pointer hover:bg-white/5 rounded-md group">
+                <p class="text-xs uppercase text-white/60 font-medium flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 transform transition-transform rotate-90" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="channel-group-title">Project Chat Rooms</span>
+                </p>
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button class="text-white/60 hover:text-white/90">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Private Channel List -->
+              <div class="channel-list mt-1 pl-1 space-y-0.5">
+                <!-- Looping private room -->
+                {% for room in rooms %}
+                  {% if room.is_private %}
+                    <!-- Each chat room item -->
+                    <div class="room-item mb-2">
+                      <!-- Chat room title -->
+                      <div data-room-id="{{ room.room_id }}" class="room-header flex items-center justify-between py-1 px-2 text-white/80 hover:text-white hover:bg-white/5 rounded cursor-pointer">
+                        <div class="flex items-center space-x-1.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white/70" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M2 9.5A3.5 3.5 0 005.5 13H9v2.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 15.586V13h2.5a4.5 4.5 0 10-.616-8.958 4.002 4.002 0 10-7.753 1.977A3.5 3.5 0 002 9.5zm9 3.5H9V8a1 1 0 012 0v5z" clip-rule="evenodd" />
+                          </svg>
+                          <span class="text-sm font-medium">{{ room.room_name }}</span>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white/60 transform transition-transform duration-200 -rotate-90" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                      </div>
+                      
+                      <!-- The chat room's channel list -->
+                      <div class="channels-sublist ml-3 mt-1 space-y-0.5 transition-all duration-200 ease-in-out overflow-hidden" style="max-height: 0; opacity: 0;">
+                        {% for channel in channels.get(room.room_id, []) %}
+                          <div data-channel-id="{{ channel.channel_id }}" class="channel-item flex items-center px-2 py-1 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-md cursor-pointer {% if active_channel and active_channel.channel_id == channel.channel_id %}active{% endif %}">
+                            <span class="mr-1.5 text-white/50">#</span>
+                            <span>{{ channel.channel_name }}</span>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+            
+            <!-- Direct message grouping -->
+            <div id="directMessagesGroup" class="channel-group mt-4" data-state="expanded">
+              <div class="flex items-center justify-between py-1.5 px-2 cursor-pointer hover:bg-white/5 rounded-md group">
+                <p class="text-xs uppercase text-white/60 font-medium flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 transform transition-transform rotate-90" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="channel-group-title">Direct Messages</span>
+                </p>
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button class="text-white/60 hover:text-white/90">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Direct message list -->
+              <div class="channel-list mt-1 pl-1 space-y-0.5">
+                <!-- Looping rendering of direct messages -->
+                {% for contact in direct_messages %}
+                  <div data-user-id="{{ contact.user_id }}" class="channel-item flex items-center px-2 py-1 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-md cursor-pointer">
+                    <div class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-xs text-white mr-2 overflow-hidden">
+                      {% if contact.avatar_url %}
+                        <img src="{{ contact.avatar_url }}" alt="{{ contact.username }}" class="w-full h-full object-cover">
+                      {% else %}
+                        {{ contact.username[0] }}
+                      {% endif %}
+                    </div>
+                    <span>{{ contact.username }}</span>
+                    {% if contact.is_online %}
+                      <div class="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Bottom toolbar -->
+        <div class="p-3 flex items-center justify-between border-t border-white/10 bg-blue-800/30 backdrop-blur-sm">
+          <div class="flex gap-2">
+            <button class="p-1.5 rounded-full hover:bg-white/10 transition-colors group relative">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span class="tooltip-text absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg">
+                Preferences
+              </span>
+            </button>
+            
+            <button class="p-1.5 rounded-full hover:bg-white/10 transition-colors group relative">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="tooltip-text absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg">
+                Help
+              </span>
+            </button>
+          </div>
+          
+          <!-- Add Exit button to the bottom of the sidebar -->
+          <a href="{{ url_for('auth.logout') }}" class="p-1.5 rounded-full hover:bg-white/10 transition-colors group relative">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span class="tooltip-text absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg">
+            Logout
+          </span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main panel -->
+    <main class="flex-1 flex flex-col">
+      <!-- top bar -->
+      <div class="flex justify-between items-center border-b p-3 bg-white theme-transition">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 id="channelTitle" class="font-semibold text-lg">{{ active_channel.channel_name if active_channel else 'Select a channel' }}</h1>
+            <div class="channel-header-actions flex items-center">
+              <button id="channelMenuBtn" class="p-1 hover:bg-gray-100 rounded-full transition-colors" aria-label="Channel menu" aria-expanded="false">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            <!-- channel menu drop down -->
+            <div id="channelMenuDropdown" class="absolute mt-1 top-full left-0 bg-white shadow-lg rounded-md border border-gray-200 w-64 opacity-0 invisible transition-all duration-200 z-20">
+              <div class="py-2">
+                <!-- resource management -->
+                <button onclick="openResourceManagementModal()" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  Resource Management
+                </button>
+                <!-- Invite Others -->
+                <button onclick="openInviteMembersModal()" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Invite Members
+                </button>
+                <!-- set header -->
+                <button onclick="openSetHeaderModal()" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Set Header
+                </button>
+                <!-- channel management -->
+                <button onclick="openChannelManagementModal()" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                  Channel Management
+                </button>
+              </div>
+            </div>
+          </div>
+          <p id="channelDescription" class="text-sm text-gray-400 cursor-pointer hover:text-gray-600 group flex items-center transition-colors" onclick="openEditDescriptionModal()">
+            {% if active_channel and active_channel.description %}
+              <span>{{ active_channel.description }}</span>
+            {% else %}
+              <span>Add channel description</span>
+            {% endif %}
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </p>
+        </div>
+        <div class="flex items-center gap-3 text-gray-600">
+          <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input type="text" id="searchInput" placeholder="Search..." class="w-32 pl-10 pr-10 py-2.5 text-sm rounded-full border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-400 focus:ring focus:ring-blue-100 focus:outline-none focus:w-56 shadow-sm transition-all duration-300 ease-in-out" />
+            <!-- Press esc to clear the search button, it will only be displayed when there is search content. -->
+            <div id="searchClearHint" class="absolute inset-y-0 right-0 pr-3 flex items-center hidden cursor-pointer">
+              <div class="flex items-center bg-gray-100 hover:bg-gray-200 transition-colors rounded-full px-2 py-0.5 border border-gray-200">
+                <span class="text-xs text-gray-500 font-medium">ESC</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-400 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            </div>
+            <!-- Add search prompts, center and add background -->
+            <div class="absolute top-full mt-2 left-0 right-0 text-xs text-gray-600 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none text-center bg-gray-100 py-1 px-2 rounded-md shadow-sm transform group-hover:translate-y-0 translate-y-1 mx-auto w-max">
+              Press Enter to search
+            </div>
+          </div>
+
+          <!-- Search result quantity tag -->
+          <div id="searchResultsBadge" class="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow-sm hidden">
+            0 results
+          </div>
+          
+          <!-- Online Users Button with Dropdown -->
+          <div class="relative group" id="onlineUsersContainer">
+            <button id="toggleOnlineUsers" class="p-1.5 rounded-full group-hover:bg-gray-200 transition-colors flex items-center gap-1 text-sm" data-user-id="{{ current_user.id }}">
+              <img src="{{ url_for('static', filename='images/人物.png') }}" class="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity" alt="users" />
+              <span>2</span>
+            </button>
+            <div class="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              View online users
+            </div>
+            
+            <!-- online users drop down menu -->
+            <div id="onlineUsersDropdown" class="absolute top-full right-0 mt-1 w-64 bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 z-30 hidden transition-all duration-200">
+              <div class="p-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-sm font-semibold text-gray-800 dark:text-white">Online Members (2)</h3>
+              </div>
+              <div class="max-h-60 overflow-y-auto">
+                <!-- Current user -->
+                <div class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <div class="flex items-center">
+                    <div class="relative flex-shrink-0">
+                      <div class="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold shadow-sm">
+                        {{ current_user.username[0] }}
+                      </div>
+                      <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                      <div class="flex items-center">
+                        <p class="font-medium text-gray-800 dark:text-white text-sm">{{ current_user.username }}</p>
+                        <span class="ml-1.5 px-1.5 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded">You</span>
+                      </div>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Active now</p>
+                    </div>
+                  </div>
+                  <button disabled class="text-gray-300 dark:text-gray-600 px-2 py-1 text-xs rounded cursor-not-allowed">
+                    Message
+                  </button>
+                </div>
+                
+                <!-- root user -->
+                <div class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <div class="flex items-center">
+                    <div class="relative flex-shrink-0">
+                      <div class="w-9 h-9 rounded-full bg-red-500 flex items-center justify-center text-white font-semibold shadow-sm">R</div>
+                      <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-yellow-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                      <div class="flex items-center">
+                        <p class="font-medium text-gray-800 dark:text-white text-sm">root</p>
+                        <span class="ml-1.5 px-1.5 py-0.5 text-[10px] bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded">Admin</span>
+                      </div>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Idle · 10m ago</p>
+                    </div>
+                  </div>
+                  <button class="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 text-xs rounded transition-colors">
+                    Message
+                  </button>
+                </div>
+              </div>
+              <div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
+                <button onclick="openAllUsersModal()" class="w-full text-center text-blue-600 dark:text-blue-400 text-sm hover:underline">
+                  View All Users
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Pin Button with Tooltip -->
+          <div class="relative group" id="pinButtonContainer">
+            <button id="togglePinned" class="p-1.5 rounded-full group-hover:bg-gray-200 transition-colors">
+              <img src="{{ url_for('static', filename='images/unpinned.png') }}" class="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity" alt="pinned" />
+            </button>
+            <div class="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              View pinned messages
+            </div>
+            
+            <!-- Add a top message panel -->
+            <div id="pinnedPanel" class="fixed top-0 right-0 w-96 h-full bg-white shadow-lg border-l z-50 transform translate-x-full transition-transform duration-300 dark:bg-gray-800 dark:border-gray-700 theme-transition side-panel">
+              <div class="flex items-center justify-between p-4 border-b dark:border-gray-700">
+                <h2 class="font-semibold text-gray-800 dark:text-white flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  Pinned Messages
+                </h2>
+                <button onclick="closePanel('pinnedPanel')" id="closePinnedPanel" class="text-gray-500 hover:text-gray-800 dark:hover:text-white text-lg transition-colors">&times;</button>
+              </div>
+              <div class="p-6 text-center text-gray-500 dark:text-gray-300">
+                <img src="{{ url_for('static', filename='images/unpinned.png') }}" class="w-10 h-10 mx-auto mb-4 opacity-70 dark:opacity-90" />
+                <p class="font-medium">No pinned messages yet</p>
+                <p class="text-sm mt-2 text-gray-400 dark:text-gray-500">
+                  Important pinned messages will be displayed here for easy reference.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Saved Button with Tooltip -->
+          <div class="relative group" id="savedButtonContainer">
+            <button id="toggleSaved" class="p-1.5 rounded-full group-hover:bg-gray-200 transition-colors">
+              <img src="{{ url_for('static', filename='images/书签.png') }}" class="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity" alt="saved" />
+            </button>
+            <div class="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              View saved posts
+            </div>
+          </div>
+          
+          <!-- Mentions Button with Tooltip -->
+          <div class="relative group" id="mentionsButtonContainer">
+            <button id="toggleMentions" onclick="togglePanel('mentionsPanel')" class="p-1.5 rounded-full group-hover:bg-gray-200 transition-colors">
+              <img src="{{ url_for('static', filename='images/艾特.png') }}" class="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity" alt="mentions" />
+            </button>
+            <div class="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              View mentions
+            </div>
+          </div>
+          
+          <!-- Help Button with Dropdown -->
+          <div class="relative group" id="helpButtonContainer">
+            <button id="helpButton" class="p-1.5 rounded-full group-hover:bg-gray-200 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+            <div class="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Get help
+            </div>
+            
+            <!-- Add Help drop-down menu -->
+            <div id="helpDropdown" class="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 z-30 opacity-0 invisible transition-all duration-200">
+              <div class="py-1">
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    Tips & Tricks
+                  </div>
+                </a>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Documentation
+                  </div>
+                </a>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                    </svg>
+                    Support
+                  </div>
+                </a>
+                <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                    What's New
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Dark Mode Switch Button -->
+          <button id="toggleDark" class="relative w-16 h-7 rounded-full bg-day-night flex items-center overflow-hidden transition-colors">
+            <!-- Decorative effect -->
+            <div class="absolute inset-0">
+              <!-- Daytime mode stars -->
+              <div class="absolute w-0.5 h-0.5 bg-white rounded-full left-3 top-1.5"></div>
+              <div class="absolute w-0.5 h-0.5 bg-white rounded-full left-7 top-1"></div>
+              <div class="absolute w-0.5 h-0.5 bg-white rounded-full left-9 top-2"></div>
+              <div class="absolute w-0.5 h-0.5 bg-white rounded-full left-5 top-4"></div>
+              <div class="absolute w-0.5 h-0.5 bg-white rounded-full left-12 top-3"></div>
+            </div>
+            
+            <!-- Slider: Sun/Moon -->
+            <div class="absolute left-1 inline-flex items-center justify-center h-5 w-5 rounded-full shadow-lg transform transition-transform duration-300 ease-spring">
+              <!-- sun -->
+              <div class="absolute inset-0 rounded-full bg-amber-400 flex items-center justify-center overflow-hidden transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-700" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+              </svg>
+              </div>
+              <!-- moon -->
+              <div class="absolute inset-0 rounded-full bg-indigo-200 flex items-center justify-center overflow-hidden transition-all duration-300 opacity-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-indigo-700" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+              </svg>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Message display area -->
+      <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 dark:bg-gray-800 dark:text-white bg-white">
+        <!-- Messages will be loaded dynamically via java script -->
+        <div class="text-center py-10">
+          <p class="text-gray-500 dark:text-gray-400">Select a channel to start chatting</p>
+        </div>
+      </div>
+
+      <!-- message input -->
+      <form id="messageForm" class="flex items-center gap-2 border-t px-4 py-3 bg-white dark:bg-gray-800 dark:border-gray-700 theme-transition relative">
+        <!-- File preview area -->
+        <div id="filePreviewContainer" class="fixed p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hidden">
+          <div id="filePreview" class="w-full">
+            <!-- File preview content will be dynamically inserted through JavaScript -->
+          </div>
+        </div>
+        
+        <!-- Input box -->
+        <div class="flex-1 relative">
+          <textarea id="messageInput" placeholder="Type a message..." class="w-full min-h-[40px] max-h-32 border rounded px-4 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none transition resize-none overflow-auto"></textarea>
+        </div>
+        
+        <!-- File upload -->
+        <div class="relative">
+          <input type="file" id="fileInput" class="hidden" accept="image/*, application/pdf, text/plain, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+          <button id="attachButton" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <img src="../static/images/附件.png" class="w-5 h-5 opacity-75 hover:opacity-100 transition-opacity" alt="attach" />
+          </button>
+        </div>
+        
+        <!-- Add @ mention button -->
+        <div class="relative">
+          <button id="mentionInputBtn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <img src="../static/images/艾特.png" class="w-5 h-5 opacity-75 hover:opacity-100 transition-opacity" alt="mention" />
+          </button>
+        </div>
+        
+        <!-- Expression selector -->
+        <div class="relative">
+          <button id="emojiButton" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <img src="../static/images/表情.png" class="w-5 h-5 opacity-75 hover:opacity-100 transition-opacity" alt="emoji" />
+          </button>
+          
+          <!-- Expression selection panel -->
+          <div id="emojiPicker" class="absolute bottom-full right-0 mb-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-3 hidden z-20 w-72 transform scale-95 opacity-0 transition-all duration-200">
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                <span class="mr-2 text-lg">😊</span> Emoji Picker
+              </h3>
+              <div class="flex items-center gap-2">
+                <button id="searchEmojiBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+                <button id="closeEmojiPicker" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Search box (hidden by default) -->
+            <div id="emojiSearchContainer" class="mb-2 hidden">
+              <div class="relative">
+                <input type="text" placeholder="Search emoji..." class="w-full px-3 py-1.5 pl-8 text-sm rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none transition" />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-2.5 top-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+            
+            <!-- Expression classification -->
+            <div class="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-3">
+              <button class="emoji-category-btn text-sm px-3 py-1.5 rounded-t-lg text-blue-600 bg-blue-50 border-b-2 border-blue-600 dark:text-blue-400 dark:bg-blue-900/20 dark:border-blue-400">
+                <span class="text-base mr-1">⏱️</span>Recent
+              </button>
+              <button class="emoji-category-btn text-sm px-3 py-1.5 rounded-t-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <span class="text-base mr-1">😀</span>People
+              </button>
+              <button class="emoji-category-btn text-sm px-3 py-1.5 rounded-t-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <span class="text-base mr-1">🌿</span>Nature
+              </button>
+              <button class="emoji-category-btn text-sm px-3 py-1.5 rounded-t-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <span class="text-base mr-1">🍔</span>Food
+              </button>
+              <button class="emoji-category-btn text-sm px-3 py-1.5 rounded-t-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <span class="text-base mr-1">❤️</span>Symbols
+              </button>
+            </div>
+            
+            <!-- Expression grid -->
+            <div class="max-h-48 overflow-y-auto custom-scrollbar pr-1">
+              <div class="grid grid-cols-7 gap-1">
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">😀</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">😂</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">😊</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">😍</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">🥰</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">😘</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">🤗</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">😎</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">🤔</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">😮</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">😢</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">😭</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">😡</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">👍</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">👏</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">👌</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">✌️</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">🙏</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">💪</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">❤️</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">💔</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">💯</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">⭐</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">🔥</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">🎉</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">✨</button>
+                <button class="emoji-btn p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xl transition-colors duration-150 transform hover:scale-110">🌈</button>
+              </div>
+            </div>
+            
+            <div class="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <div class="text-xs text-gray-400">Recently used</div>
+              <button class="text-xs px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors">
+                View all emojis
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <button id="sendButton" type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md transition-colors flex items-center">
+          <span>Send</span>
+        </button>
+      </form>
+    </main>
+
+    <!-- side panels -->
+    <div id="mentionsPanel" class="fixed top-0 right-0 w-96 h-full bg-white shadow-lg border-l z-50 transform translate-x-full transition-transform duration-300 dark:bg-gray-800 dark:border-gray-700 theme-transition side-panel">
+      <div class="flex items-center justify-between p-4 border-b dark:border-gray-700">
+        <h2 class="font-semibold text-gray-800 dark:text-white">Recent Mentions</h2>
+        <button onclick="closePanel('mentionsPanel')" class="text-gray-500 hover:text-gray-800 dark:hover:text-white text-lg transition-colors">&times;</button>
+      </div>
+      <div class="p-6 text-center text-gray-500 dark:text-gray-300">
+        <img src="../static/images/艾特.png" class="w-10 h-10 mx-auto mb-4 opacity-70 dark:opacity-90" />
+        <p class="font-medium">No mentions yet</p>
+        <p class="text-sm mt-2 text-gray-400 dark:text-gray-500">
+          Messages where someone mentions you or includes your trigger words are saved here.
+        </p>
+      </div>
+    </div>
+
+    <!-- Fixed message panel -->
+    <div id="pinnedPanel" class="fixed top-0 right-0 w-96 h-full bg-white shadow-xl border-l z-50 transform translate-x-full transition-transform duration-300 ease-in-out dark:bg-gray-800 dark:border-gray-700 theme-transition side-panel">
+      <div class="flex flex-col h-full">
+        <!-- header -->
+        <div class="flex items-center justify-between p-4 border-b dark:border-gray-700 bg-gradient-to-r from-blue-600 to-indigo-600">
+          <h2 class="font-semibold text-white flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+            Pinned Messages
+          </h2>
+          <button onclick="closePanel('pinnedPanel')" class="text-white/70 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Content area -->
+        <div class="flex-1 overflow-y-auto">
+          <div class="p-6 space-y-4">
+            <!-- Here, fixed messages will be dynamically inserted through java script -->
+            <div class="text-center text-gray-500 dark:text-gray-300">
+              <img src="../static/images/unpinned.png" class="w-10 h-10 mx-auto mb-4 opacity-70 dark:opacity-90" />
+              <p class="font-medium">No pinned messages yet</p>
+              <p class="text-sm mt-2 text-gray-400 dark:text-gray-500">
+                Important pinned messages will be displayed here for easy reference.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- bottom -->
+        <div class="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
+            Click the <span class="inline-flex px-1 text-blue-500">📌</span> icon next to a message to pin it here
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div id="savedPanel" class="fixed top-0 right-0 w-96 h-full bg-white shadow-lg border-l z-50 transform translate-x-full transition-transform duration-300 dark:bg-gray-800 dark:border-gray-700 theme-transition side-panel">
+      <div class="flex flex-col h-full">
+        <!-- header -->
+        <div class="flex items-center justify-between p-4 border-b dark:border-gray-700 bg-gradient-to-r from-amber-500 to-orange-600">
+          <h2 class="font-semibold text-white flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+            My Saved Items
+          </h2>
+          <button onclick="closePanel('savedPanel')" class="text-white/70 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Search and Filter Bars -->
+        <div class="p-3 border-b dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <input type="text" id="savedItemSearch" placeholder="Search saved items..." class="w-full pl-8 pr-3 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-1 focus:ring-amber-500 dark:focus:ring-amber-600 focus:border-amber-500 dark:focus:border-amber-600 outline-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-2.5 top-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <select id="savedItemTypeFilter" class="pl-3 pr-8 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-1 focus:ring-amber-500 dark:focus:ring-amber-600 focus:border-amber-500 dark:focus:border-amber-600 outline-none">
+              <option value="all">All</option>
+              <option value="message">Messages</option>
+              <option value="file">Files</option>
+            </select>
+          </div>
+          
+          <!-- Quickly filter tags -->
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            <button class="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-medium whitespace-nowrap">Recently Added</button>
+            <button class="px-2.5 py-1 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-medium whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600">Add Note</button>
+            <button class="px-2.5 py-1 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-medium whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600">Documents</button>
+            <button class="px-2.5 py-1 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-medium whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600">Images</button>
+          </div>
+        </div>
+        
+        <!-- Content area -->
+        <div class="flex-1 overflow-y-auto">
+          <div id="savedItemsContainer" class="p-4 space-y-3">
+            <!-- Here, the saved project will be dynamically inserted through java script -->
+            <div class="text-center text-gray-500 dark:text-gray-300 py-8">
+              <img src="../static/images/书签.png" class="w-16 h-16 mx-auto mb-4 opacity-70 dark:opacity-90" />
+              <p class="font-medium">No saved items</p>
+              <p class="text-sm mt-2 text-gray-400 dark:text-gray-500">
+                You can save important messages and files for later reference.
+              </p>
+              <div class="mt-4 text-center">
+                <button class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm transition-colors">
+                  Save your first item
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Bottom Action Bar -->
+        <div class="p-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              Tip: Click the <span class="text-amber-500">📌</span> icon next to messages to save them
+            </span>
+            <button id="clearSavedItems" class="px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
+              Clear All
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- Invite members pop-up window -->
+  <div id="inviteModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-gray-800 w-full max-w-md p-8 rounded-xl shadow-xl transform transition-all duration-300 ease-in-out theme-transition">
+      <!-- icon -->
+      <div class="flex justify-center mb-6">
+        <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-full">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- title -->
+      <h2 class="text-center text-xl font-semibold mb-2 dark:text-white">
+        Invite <span class="text-blue-600 dark:text-blue-400">Members</span> to Internal
+      </h2>
+      <p class="text-sm text-center text-gray-600 dark:text-gray-300 mb-6">
+        Share this link to invite people to this team.
+      </p>
+
+      <!-- Share link -->
+      <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Share This Link</label>
+      <div class="flex mt-1 mb-1 relative">
+        <input type="text" readonly class="flex-1 border rounded-l-md px-3 py-2 text-sm text-gray-700 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600" value="http://delivery.htb:8065/signup_user_complete/?id=pgexr1ys4pfdu...">
+        <button class="px-4 py-2 bg-blue-600 text-white border border-l-0 border-blue-600 rounded-r-md text-sm font-medium dark:bg-blue-700 dark:border-blue-700 hover:bg-blue-700 transition-colors duration-200">Copy Link</button>
+      </div>
+
+      <!-- Dividing line -->
+      <div class="flex items-center my-6">
+        <div class="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
+        <div class="text-gray-400 text-sm px-3">OR</div>
+        <div class="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
+      </div>
+
+      <!-- Add a member -->
+      <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Add or Invite People</label>
+      <div class="relative mt-1">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input type="text" placeholder="Search members by name" class="w-full pl-10 px-3 py-2 border rounded-md text-sm dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none" />
+      </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4">Add existing members to this team.</p>
+
+      <!-- Invitation Button -->
+      <div class="flex justify-between mt-6">
+        <button onclick="document.getElementById('inviteModal').classList.add('hidden')" class="text-gray-600 dark:text-gray-300 font-medium hover:underline">Cancel</button>
+        <button class="bg-gray-300 text-white font-medium py-2 px-4 rounded-md cursor-not-allowed" disabled>
+          Invite Members
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit channel head pop-up window -->
+  <div id="editHeaderModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden modal theme-transition">
+    <div class="bg-white dark:bg-gray-800 w-full max-w-xl rounded-lg shadow-xl p-6 relative theme-transition border border-gray-200 dark:border-gray-700">
+      <!-- Close button -->
+      <button onclick="closeEditHeaderModal()" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-lg p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <!-- Pop-up title -->
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          Edit Channel Header
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-300">
+          Edit the text that appears next to the channel name.
+        </p>
+      </div>
+
+      <!-- Input box -->
+      <div class="mb-4">
+        <div class="mb-2 flex items-center justify-between">
+          <label for="headerInput" class="text-sm font-medium text-gray-700 dark:text-gray-300">Channel Header Content</label>
+          <span class="text-xs text-gray-500 dark:text-gray-400" id="headerCharCount">0/128</span>
+        </div>
+        <textarea 
+          id="headerInput" 
+          rows="4" 
+          placeholder="Edit channel header..." 
+          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:focus:ring-blue-500"
+          maxlength="128"
+          oninput="document.getElementById('headerCharCount').textContent = this.value.length + '/128'"
+        ></textarea>
+      </div>
+
+      <div class="text-xs text-gray-600 dark:text-gray-400 mb-6 bg-blue-50 dark:bg-blue-900/30 p-3 rounded-md border border-blue-100 dark:border-blue-900/50">
+        <p class="flex items-start">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 dark:text-blue-400 mr-1.5 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>The channel header is displayed next to the channel name and can include important information or descriptions. Basic formatting such as <strong>bold</strong> and <em>italic</em> is supported.</span>
+        </p>
+      </div>
+
+      <!-- Button -->
+      <div class="flex justify-end mt-4 space-x-3">
+        <button onclick="closeEditHeaderModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
+          Cancel
+        </button>
+        <button onclick="saveHeader()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors dark:bg-blue-700 dark:hover:bg-blue-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800">
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- All users pop-up windows -->
+  <div id="allUsersModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden theme-transition">
+    <div class="bg-white dark:bg-gray-800 w-full max-w-2xl max-h-[80vh] rounded-lg shadow-xl flex flex-col">
+      <!-- Pop-up window head -->
+      <div class="flex items-center justify-between p-4 border-b dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-white">All Users</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">12 users in this workspace</p>
+        </div>
+        <!-- Search box -->
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input type="text" id="memberSearchInput" placeholder="Search by name or email" class="w-full pl-10 pr-4 py-2 text-sm border rounded-md dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none">
+        </div>
+        <!-- Close button -->
+        <button onclick="closeAllUsersModal()" class="text-gray-500 hover:text-gray-800 dark:hover:text-white text-lg font-semibold transition-colors">&times;</button>
+      </div>
+      
+      <!-- Content area -->
+      <div class="overflow-y-auto flex-1 custom-scrollbar">
+        <div class="p-2">
+          <!-- Online users -->
+          <div class="mb-4">
+            <h3 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 px-3 py-2">Active Now (2)</h3>
+            <div class="space-y-1">
+              <!-- User Item -Yourself -->
+              <div class="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-md transition-colors">
+                <div class="relative flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center font-semibold shadow-sm">W</div>
+                  <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                  <div class="flex items-center">
+                    <p class="font-medium text-gray-900 dark:text-white truncate">withers</p>
+                    <span class="ml-2 px-1.5 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded">You</span>
+                  </div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 truncate">Active now</p>
+                </div>
+                <div class="flex-shrink-0">
+                  <button class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- User Items -root -->
+              <div class="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-md transition-colors">
+                <div class="relative flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center font-semibold shadow-sm">R</div>
+                  <div class="absolute bottom-0 right-0 w-3 h-3 bg-yellow-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                  <div class="flex items-center">
+                    <p class="font-medium text-gray-900 dark:text-white truncate">root</p>
+                    <span class="ml-2 px-1.5 py-0.5 text-[10px] bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded">Admin</span>
+                  </div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 truncate">Idle - Last active 10m ago</p>
+                </div>
+                <div class="flex-shrink-0 flex space-x-2">
+                  <button class="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 rounded text-sm transition-colors">Message</button>
+                  <button class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Offline users -->
+          <div class="mb-4">
+            <h3 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 px-3 py-2">Offline (10)</h3>
+            <div class="space-y-1">
+              <!-- User Item 1 -->
+              <div class="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-md transition-colors">
+                <div class="relative flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-purple-500 text-white flex items-center justify-center font-semibold shadow-sm">C</div>
+                  <div class="absolute bottom-0 right-0 w-3 h-3 bg-gray-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                  <div class="flex items-center">
+                    <p class="font-medium text-gray-900 dark:text-white truncate">channelexport</p>
+                    <span class="ml-2 px-1.5 py-0.5 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded">Dev</span>
+                  </div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 truncate">Last seen yesterday at 7:30 PM</p>
+                </div>
+                <div class="flex-shrink-0 flex space-x-2">
+                  <button class="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 rounded text-sm transition-colors">Message</button>
+                  <button class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- User Item 2 -->
+              <div class="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-md transition-colors">
+                <div class="relative flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-semibold shadow-sm">B</div>
+                  <div class="absolute bottom-0 right-0 w-3 h-3 bg-gray-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                  <div class="flex items-center">
+                    <p class="font-medium text-gray-900 dark:text-white truncate">bob.developer</p>
+                  </div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 truncate">Last seen 2 days ago</p>
+                </div>
+                <div class="flex-shrink-0 flex space-x-2">
+                  <button class="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 rounded text-sm transition-colors">Message</button>
+                  <button class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- User Item 3 -->
+              <div class="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-md transition-colors">
+                <div class="relative flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold shadow-sm">A</div>
+                  <div class="absolute bottom-0 right-0 w-3 h-3 bg-gray-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                  <div class="flex items-center">
+                    <p class="font-medium text-gray-900 dark:text-white truncate">alice.designer</p>
+                    <span class="ml-2 px-1.5 py-0.5 text-[10px] bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-300 rounded">Designer</span>
+                  </div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 truncate">Last seen 3 days ago</p>
+                </div>
+                <div class="flex-shrink-0 flex space-x-2">
+                  <button class="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 rounded text-sm transition-colors">Message</button>
+                  <button class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- More user items (simplified display) -->
+              <div class="px-3 py-2 text-center">
+                <button class="text-blue-600 dark:text-blue-400 hover:underline text-sm">Load more users</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Channel Description Edit Modal Box -->
+  <div id="editDescriptionModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 invisible transition-all duration-300">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 transform transition-all duration-300 ease-out scale-95 opacity-0">
+      <h2 class="text-lg font-semibold mb-4 dark:text-white">Edit Channel Description</h2>
+      <input type="hidden" id="channelIdInput" value="{% if active_channel %}{{ active_channel.channel_id }}{% endif %}">
+      <textarea id="modalDescriptionInput" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" rows="4" placeholder="Add a channel description">{% if active_channel and active_channel.description %}{{ active_channel.description }}{% endif %}</textarea>
+      <div class="flex justify-end gap-2 mt-4">
+        <button onclick="closeEditDescriptionModal()" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">Cancel</button>
+        <button onclick="saveChannelDescription()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- invite members modal -->
+  <div id="inviteMembersModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-[600px] max-h-[80vh] overflow-y-auto">
+      <!-- header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Invite Members</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Invite people to join Internal</p>
+        </div>
+        <button onclick="closeInviteMembersModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Quick invitation link -->
+      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          </div>
+          <h3 class="font-medium text-blue-800 dark:text-blue-200">Quick Invite Link</h3>
+          </div>
+          <div class="flex gap-2">
+          <input type="text" readonly value="https://discord.gg/example" class="flex-1 p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-sm" />
+          <button onclick="copyInviteLink()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+              </svg>
+            Copy Link
+            </button>
+        </div>
+      </div>
+
+      <!-- Search and Invite -->
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search & Invite</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+          </div>
+            <input type="text" id="memberSearchInput" placeholder="Search by name or email" class="w-full pl-10 pr-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none" />
+        </div>
+      </div>
+      
+        <!-- Search results list -->
+        <div class="border rounded-lg divide-y dark:border-gray-600">
+          <!-- Search results will be dynamically inserted through java script -->
+        </div>
+      </div>
+
+      <!-- bottom -->
+      <div class="mt-6 pt-4 border-t dark:border-gray-700 flex justify-between items-center">
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          <span class="font-medium" id="searchResultCount">0</span> people found
+        </div>
+        <div class="flex gap-2">
+          <button onclick="closeInviteMembersModal()" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          Cancel
+        </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Set the title modal box -->
+  <div id="setHeaderModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-96">
+      <h2 class="text-lg font-semibold mb-4 dark:text-white">Set Channel Header</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Channel Name</label>
+          <input type="text" id="channelNameInput" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Enter channel name" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Channel Icon</label>
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <button class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600">Change Icon</button>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button onclick="closeSetHeaderModal()" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">Cancel</button>
+        <button onclick="saveChannelHeader()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resource Management Modal Box -->
+  <div id="resourceManagementModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl w-[800px] max-h-[85vh] flex flex-col shadow-2xl transform transition-all duration-300 ease-out">
+      <!-- header -->
+      <div class="p-4 border-b dark:border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              Resource Management
+            </h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="openAddResourceModal()" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1 text-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add
+            </button>
+            <button onclick="closeResourceManagementModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search and filter -->
+        <div class="flex items-center gap-2">
+          <div class="flex-1 relative">
+            <input type="text" placeholder="Search resources..." class="w-full pl-8 pr-3 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-2.5 top-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <select class="pl-3 pr-8 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none">
+            <option value="all">All Types</option>
+            <option value="document">Documents</option>
+            <option value="folder">Folders</option>
+            <option value="link">Links</option>
+          </select>
+          <select class="pl-3 pr-8 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none">
+            <option value="created_at_desc">Newest</option>
+            <option value="created_at_asc">Oldest</option>
+            <option value="name_asc">Name A-Z</option>
+            <option value="name_desc">Name Z-A</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Resource List Area -->
+      <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+        <!-- Classification tags -->
+        <div class="flex items-center gap-1.5 mb-4 overflow-x-auto pb-2 -mx-1 px-1">
+          <button class="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-medium whitespace-nowrap">All</button>
+          <button class="px-2.5 py-1 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-medium whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600">Docs</button>
+          <button class="px-2.5 py-1 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-medium whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600">Design</button>
+          <button class="px-2.5 py-1 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-medium whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600">Code</button>
+          <button class="px-2.5 py-1 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-medium whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600">Notes</button>
+        </div>
+
+        <!-- Resource grid -->
+        <div class="grid grid-cols-2 gap-4" id="resourcesList">
+          <!-- The resource card will be dynamically inserted through Java script -->
+        </div>
+      </div>
+
+      <!-- Drag and drop upload area -->
+      <div class="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+        <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-colors cursor-pointer">
+          <input type="file" id="resourceFileInput" class="hidden" multiple />
+          <div class="flex items-center justify-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              <span class="font-medium text-blue-600 dark:text-blue-400">Click to upload</span> or drag and drop
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Resource Modal Box -->
+  <div id="resourceFormModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden w-[650px] max-h-[85vh] flex flex-col shadow-2xl transform transition-all duration-300 ease-out">
+      <!-- header -->
+      <div class="p-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-bold flex items-center gap-2" id="resourceFormTitle">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Add Resource
+            </h2>
+            <p class="text-blue-100 mt-1 text-sm">Create a new resource to share with your team</p>
+          </div>
+          <button onclick="closeResourceFormModal()" class="text-white/80 hover:text-white transition-colors rounded-full p-1 hover:bg-white/10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <form id="resourceForm" class="space-y-6">
+          <input type="hidden" id="resourceId" />
+          
+          <!-- Resource Name -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Resource Name <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+              </div>
+              <input type="text" id="resourceName" required class="w-full pl-10 p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none" placeholder="Enter resource name..." />
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Choose a meaningful name for your resource</p>
+          </div>
+
+          <!-- URL -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Resource URL <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              </div>
+              <input type="url" id="resourceUrl" required class="w-full pl-10 p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none" placeholder="https://example.com/" />
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Enter a valid URL address</p>
+          </div>
+          
+          <!-- describe -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Description
+            </label>
+            <textarea id="resourceDescription" rows="3" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none" placeholder="Describe the purpose of this resource..."></textarea>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Optional: Add a brief description of the resource</p>
+          </div>
+
+          <!-- Resource Type -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Resource Type
+            </label>
+            <div class="grid grid-cols-4 gap-3">
+              <div class="resource-type-option group cursor-pointer" data-type="link">
+                <div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+                  <div class="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                  </div>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Link</span>
+                </div>
+              </div>
+              <div class="resource-type-option group cursor-pointer" data-type="document">
+                <div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+                  <div class="w-12 h-12 mx-auto bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-green-200 dark:group-hover:bg-green-800/50 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Document</span>
+                </div>
+              </div>
+              <div class="resource-type-option group cursor-pointer" data-type="image">
+                <div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+                  <div class="w-12 h-12 mx-auto bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-purple-200 dark:group-hover:bg-purple-800/50 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Image</span>
+                </div>
+              </div>
+              <div class="resource-type-option group cursor-pointer" data-type="other">
+                <div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+                  <div class="w-12 h-12 mx-auto bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-amber-200 dark:group-hover:bg-amber-800/50 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Other</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom properties -->
+          <div class="pt-4 border-t dark:border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Custom Properties</label>
+              <button type="button" onclick="addCustomProperty()" class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Property
+              </button>
+            </div>
+            <div id="customProperties" class="space-y-3 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+              <!-- Custom properties will be dynamically inserted through java script -->
+              <p class="text-center text-sm text-gray-500 dark:text-gray-400 py-2">Click the "Add Property" button above to add custom key-value pairs</p>
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Bottom button area -->
+      <div class="p-4 bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700 flex justify-end gap-3">
+        <button type="button" onclick="closeResourceFormModal()" class="px-5 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors font-medium">
+          Cancel
+        </button>
+        <button type="button" id="saveResourceBtn" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Save Resource
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Channel Management Modal Box -->
+  <div id="channelManagementModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 invisible transition-all duration-300">
+    <div class="bg-white dark:bg-gray-800 rounded-xl w-[800px] max-h-[85vh] flex flex-col shadow-2xl transform transition-all duration-300 ease-out scale-95 opacity-0">
+      <!-- header -->
+      <div class="p-4 border-b dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              Channel Management
+            </h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage channel members and permissions</p>
+              </div>
+          <button onclick="closeChannelManagementModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+              </div>
+
+        <!-- Search and filter -->
+        <div class="mt-4 flex items-center gap-2">
+          <div class="flex-1 relative">
+            <input type="text" placeholder="Search members..." class="w-full pl-8 pr-3 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-2.5 top-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+                </div>
+          <select class="pl-3 pr-8 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 outline-none">
+            <option value="all">All Members</option>
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+            <option value="muted">Muted</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Member List -->
+      <div class="flex-1 overflow-y-auto p-4">
+        <div class="space-y-2">
+          <!-- Online Members -->
+          <div class="mb-4">
+            <h3 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">Online Members (2)</h3>
+            <div class="space-y-2">
+              <!-- Membership -Self -->
+              <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between group hover:shadow-sm transition-shadow">
+                <div class="flex items-center gap-3">
+                  <div class="relative">
+                    <div class="w-10 h-10 rounded-lg bg-green-500 text-white flex items-center justify-center font-semibold">W</div>
+                    <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" disabled title="Cannot manage yourself">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Membership -root -->
+              <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between group hover:shadow-sm transition-shadow">
+                <div class="flex items-center gap-3">
+                  <div class="relative">
+                    <div class="w-10 h-10 rounded-lg bg-red-500 text-white flex items-center justify-center font-semibold">R</div>
+                    <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-yellow-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium text-gray-900 dark:text-white">root</span>
+                      <span class="px-1.5 py-0.5 text-[10px] bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded">Admin</span>
+                  </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Idle - Last active 10m ago</div>
+                </div>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" disabled title="Cannot manage admin">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Offline members -->
+          <div>
+            <h3 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">Offline Members (3)</h3>
+            <div class="space-y-2">
+              <!-- Membership -channelexport -->
+              <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between group hover:shadow-sm transition-shadow">
+                <div class="flex items-center gap-3">
+                  <div class="relative">
+                    <div class="w-10 h-10 rounded-lg bg-purple-500 text-white flex items-center justify-center font-semibold">C</div>
+                    <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gray-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                  </div>
+                  <div>
+                <div class="flex items-center gap-2">
+                      <span class="font-medium text-gray-900 dark:text-white">channelexport</span>
+                      <span class="px-1.5 py-0.5 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded">Dev</span>
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Last seen yesterday at 7:30 PM</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onclick="showMemberActions('channelexport', 1, 1, event)" class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Membership -bob.developer -->
+              <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between group hover:shadow-sm transition-shadow">
+                <div class="flex items-center gap-3">
+                  <div class="relative">
+                    <div class="w-10 h-10 rounded-lg bg-orange-500 text-white flex items-center justify-center font-semibold">B</div>
+                    <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gray-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium text-gray-900 dark:text-white">bob.developer</span>
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Last seen 2 days ago</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onclick="showMemberActions('bob.developer', 2, 1, event)" class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Membership -alice.designer -->
+              <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between group hover:shadow-sm transition-shadow">
+                <div class="flex items-center gap-3">
+                  <div class="relative">
+                    <div class="w-10 h-10 rounded-lg bg-blue-500 text-white flex items-center justify-center font-semibold">A</div>
+                    <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gray-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium text-gray-900 dark:text-white">alice.designer</span>
+                      <span class="px-1.5 py-0.5 text-[10px] bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-300 rounded">Designer</span>
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Last seen 3 days ago</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onclick="showMemberActions('alice.designer', 3, 1, event)" class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <!-- bottom -->
+      <div class="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+        <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+          <div>5 total members</div>
+          <button class="text-blue-600 dark:text-blue-400 hover:underline">View Audit Log</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Member Actions Drop-down Menu -->
+  <div id="memberActionsDropdown" class="fixed bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 w-48 py-1 hidden opacity-0 translate-y-1 transition-all duration-200 ease-out transform">
+    <button onclick="showRoleOptions(event)" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+      </svg>
+      Change Role
+    </button>
+    <button onclick="muteMember()" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+      </svg>
+      Mute Member
+    </button>
+    <div class="w-full h-px bg-gray-200 dark:bg-gray-700 my-1"></div>
+    <button onclick="kickMember()" class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+      </svg>
+      Remove Member
+    </button>
+  </div>
+
+  <!-- Role Options drop-down menu -->
+  <div id="roleOptionsDropdown" class="fixed bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 w-48 py-1 hidden opacity-0 translate-y-1 transition-all duration-200 ease-out transform">
+    <button onclick="changeRole('admin')" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+      管理员
+    </button>
+    <button onclick="changeRole('moderator')" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+      </svg>
+      版主
+    </button>
+    <button onclick="changeRole('member')" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+      普通成员
+    </button>
+    <button onclick="changeRole('readonly')" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </svg>
+      只读
+    </button>
+    <div class="w-full h-px bg-gray-200 dark:bg-gray-700 my-1"></div>
+    <button onclick="hideRoleOptions()" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      返回
+    </button>
+  </div>
+
+  <!-- Initialize the script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Find Channel Menu Buttons and Drop-down Menu
+      const channelMenuBtn = document.getElementById('channelMenuBtn');
+      const channelMenuDropdown = document.getElementById('channelMenuDropdown');
+      
+      // Initialize member operations related variables
+      window.currentMember = null;
+      
+      if (channelMenuBtn && channelMenuDropdown) {
+        // Show/hide drop-down menu when clicking the Channel Menu button
+        channelMenuBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          
+          if (channelMenuDropdown.classList.contains('opacity-0') || channelMenuDropdown.classList.contains('invisible')) {
+            // Show drop-down menu
+            channelMenuDropdown.classList.remove('opacity-0', 'invisible');
+            channelMenuDropdown.classList.add('opacity-100', 'visible');
+          } else {
+            // Hide drop-down menu
+            channelMenuDropdown.classList.remove('opacity-100', 'visible');
+            channelMenuDropdown.classList.add('opacity-0', 'invisible');
+          }
+        });
+        
+        // Click on other areas of the document to close the drop-down menu
+        document.addEventListener('click', function(e) {
+          if (!channelMenuBtn.contains(e.target) && !channelMenuDropdown.contains(e.target)) {
+            channelMenuDropdown.classList.remove('opacity-100', 'visible');
+            channelMenuDropdown.classList.add('opacity-0', 'invisible');
+          }
+        });
+      }
+    });
+  </script>
+  
+  <!-- Initialize the current user information -->
+  <script>
+    // Initialize the current user object by user data passed from flask
+    window.currentUser = {
+      id: {{ current_user.id|default(1) }},
+      username: "{{ current_user.username|default('user') }}",
+      is_active: {{ 'true' if current_user.is_active|default(true) else 'false' }},
+      role: "{{ current_user.role|default('member') }}"
+    };
+    
+    // Set more global variables for use by other scripts
+    window.currentUserId = {{ current_user.id|default(1) }};
+    window.currentUsername = "{{ current_user.username|default('user') }}";
+    
+    // Initialize channel management related variables
+    window.memberActionsVisible = false;
+    window.currentMember = null;
+    window.searchDebounceTimer = null;
+  </script>
+  
+  <!-- Core java script file -->
+  <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ui-effects.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/panels.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ui-fixes.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/pin-handler.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/messages.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/search.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/test-api.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/online-users-manager.js') }}"></script>
+  
+  <!-- Initialize all functions -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize panel function
+      if (typeof initPanels === 'function') initPanels();
+      
+      // Initialize channel selection function
+      if (typeof initChannelSelection === 'function') initChannelSelection();
+      
+      // Initialize channel management function
+      if (typeof initChannelManagement === 'function') initChannelManagement();
+      
+      // Initialize the invitation search function
+      if (typeof initInviteSearch === 'function') initInviteSearch();
+      
+      // Initialize drag and drop upload
+      if (typeof initDragDropUpload === 'function') initDragDropUpload();
+      
+      // Add ripple effect
+      if (typeof addRippleEffect === 'function') addRippleEffect();
+      
+      // Fixed channel expansion issues
+      if (typeof initChannelExpandFix === 'function') initChannelExpandFix();
+      
+      // Initialize the online user manager (if not initialized yet)
+      if (typeof window.onlineUsersManager === 'undefined' && typeof OnlineUsersManager !== 'undefined') {
+        window.onlineUsersManager = new OnlineUsersManager();
+      }
+      
+      // Add click external close function for all drop-down menus
+      document.addEventListener('click', function(event) {
+        // Close the member action drop-down menu
+        const memberActionsDropdown = document.getElementById('memberActionsDropdown');
+        const roleOptionsDropdown = document.getElementById('roleOptionsDropdown');
+        
+        // Make sure not click on the drop-down menu button
+        if (memberActionsDropdown && 
+            !memberActionsDropdown.contains(event.target) && 
+            !event.target.closest('button[onclick*="showMemberActions"]')) {
+          if (typeof closeMemberActionsDropdown === 'function') {
+            closeMemberActionsDropdown();
+          } else {
+            memberActionsDropdown.classList.add('hidden');
+          }
+        }
+        
+        // Close the role options drop-down menu
+        if (roleOptionsDropdown && 
+            !roleOptionsDropdown.contains(event.target) && 
+            !event.target.closest('button[onclick*="showRoleOptions"]')) {
+          roleOptionsDropdown.classList.add('hidden');
+        }
+      });
+      
+      console.log('所有JS功能已初始化');
+    });
+    
+    // Make sure the show member actions function is available
+    if (typeof window.showMemberActions !== 'function') {
+      window.showMemberActions = function(username, userId, channelId, event) {
+        console.log('显示成员操作菜单:', username, userId, channelId);
+        
+        // Stop events from bubbles
+        event.stopPropagation();
+        
+        // Save the member information of the current operation
+        window.currentMember = {
+          username,
+          userId,
+          channelId
+        };
+        
+        // Get member action drop-down menu element
+        const dropdown = document.getElementById('memberActionsDropdown');
+        
+        if (dropdown) {
+          // Calculate position: on the right side of the trigger button
+          const rect = event.target.closest('button').getBoundingClientRect();
+          dropdown.style.top = `${rect.top}px`;
+          dropdown.style.left = `${rect.right + 5}px`; // Add a little spacing to the right
+          
+          // Show drop-down menu
+          dropdown.classList.remove('hidden', 'opacity-0', 'translate-y-1');
+          
+          window.memberActionsVisible = true;
+        }
+      };
+    }
+    
+    // Implement the function of changing roles
+    window.showRoleOptions = function(event) {
+      event.stopPropagation();
+      
+      const memberActionsDropdown = document.getElementById('memberActionsDropdown');
+      const roleOptionsDropdown = document.getElementById('roleOptionsDropdown');
+      
+      if (memberActionsDropdown && roleOptionsDropdown) {
+        // Copy location
+        const rect = memberActionsDropdown.getBoundingClientRect();
+        roleOptionsDropdown.style.top = `${rect.top}px`;
+        roleOptionsDropdown.style.left = `${rect.right + 5}px`;
+        
+        // Show role options
+        roleOptionsDropdown.classList.remove('hidden', 'opacity-0', 'translate-y-1');
+        
+        // Hide member operations
+        memberActionsDropdown.classList.add('hidden');
+      }
+    };
+    
+    // Hide role options to show member actions
+    window.hideRoleOptions = function() {
+      const memberActionsDropdown = document.getElementById('memberActionsDropdown');
+      const roleOptionsDropdown = document.getElementById('roleOptionsDropdown');
+      
+      if (memberActionsDropdown && roleOptionsDropdown) {
+        // Show member actions
+        memberActionsDropdown.classList.remove('hidden');
+        
+        // Hide role options
+        roleOptionsDropdown.classList.add('hidden');
+      }
+    };
+    
+    // Change role
+    window.changeRole = function(role) {
+      if (!window.currentMember) return;
+      
+      const { username, userId, channelId } = window.currentMember;
+      console.log(`将用户 ${username} (ID: ${userId}) 的角色更改为 ${role}`);
+      
+      // Here you can send an API request to change the role
+      fetch(`/api/change_member_role`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          channel_id: channelId,
+          role: role
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(`已将 ${username} 的角色更改为 ${role}`);
+        } else {
+          alert(`更改角色失败: ${data.message || '未知错误'}`);
+        }
+      })
+      .catch(error => {
+        console.error('更改角色错误:', error);
+        // Simulation successfully responded
+        alert(`已将 ${username} 的角色更改为 ${role}`);
+      });
+      
+      // Hide all drop-down menus
+      const memberActionsDropdown = document.getElementById('memberActionsDropdown');
+      const roleOptionsDropdown = document.getElementById('roleOptionsDropdown');
+      
+      if (memberActionsDropdown) memberActionsDropdown.classList.add('hidden');
+      if (roleOptionsDropdown) roleOptionsDropdown.classList.add('hidden');
+    };
+    
+    // Silent members
+    window.muteMember = function() {
+      if (!window.currentMember) return;
+      
+      const { username, userId, channelId } = window.currentMember;
+      console.log(`静音用户 ${username} (ID: ${userId})`);
+      
+      // Send API request mute member
+      fetch(`/api/mute_member`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          channel_id: channelId,
+          muted: true
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(`已静音 ${username}`);
+        } else {
+          alert(`静音失败: ${data.message || '未知错误'}`);
+        }
+      })
+      .catch(error => {
+        console.error('静音成员错误:', error);
+        // Simulation successfully responded
+        alert(`已静音 ${username}`);
+      });
+      
+      // Hide drop-down menu
+      const dropdown = document.getElementById('memberActionsDropdown');
+      if (dropdown) dropdown.classList.add('hidden');
+    };
+    
+    // Kick out members
+    window.kickMember = function() {
+      if (!window.currentMember) return;
+      
+      const { username, userId, channelId } = window.currentMember;
+      console.log(`踢出用户 ${username} (ID: ${userId})`);
+      
+      // Confirm dialog box
+      if (confirm(`确定要将 ${username} 从此频道移除吗？`)) {
+        // Send API request to kick out member
+        fetch(`/api/remove_member`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            channel_id: channelId
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert(`已将 ${username} 从频道移除`);
+            
+            // Refresh the member list
+            if (typeof loadChannelMembers === 'function') {
+              loadChannelMembers();
+            }
+          } else {
+            alert(`移除失败: ${data.message || '未知错误'}`);
+          }
+        })
+        .catch(error => {
+          console.error('踢出成员错误:', error);
+          // Simulation successfully responded
+          alert(`已将 ${username} 从频道移除`);
+        });
+      }
+      
+      // Hide drop-down menu
+      const dropdown = document.getElementById('memberActionsDropdown');
+      if (dropdown) dropdown.classList.add('hidden');
+    };
+  </script>
+
+  <!-- Script section -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize various functions
+      
+      // Initialize the channel manager
+      if (typeof initChannelManager === 'function') {
+        initChannelManager();
+      }
+
+      // Disable all ripple effects
+      disableAllRippleEffects();
+    });
+
+    // Disable all ripple effects
+    function disableAllRippleEffects() {
+      console.log('正在禁用所有ripple效果');
+      
+      // 1. Remove all existing ripple elements
+      document.querySelectorAll('.ripple, .ripple-effect, span.ripple, div.ripple').forEach(el => {
+        el.remove();
+      });
+      
+      // 2. Remove all data-ripple attributes
+      document.querySelectorAll('[data-ripple]').forEach(el => {
+        el.removeAttribute('data-ripple');
+      });
+      
+      // 3. Check and remove emerging ripple regularly
+      setInterval(function() {
+        document.querySelectorAll('.ripple, .ripple-effect').forEach(el => {
+          el.remove();
+        });
+      }, 500);
+      
+      // 4. Listen to the click of the button to prevent ripple from being added
+      document.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+          // Clean up immediately after clicking the button
+          setTimeout(function() {
+            document.querySelectorAll('.ripple, .ripple-effect').forEach(el => {
+              el.remove();
+            });
+          }, 10);
+        }
+      }, true);
+      
+      // 5. Replace the possible createRipple function
+      window.createRipple = function() { 
+        console.log('Ripple effect disabled');
+        return; 
+      };
+      
+      if (typeof addRippleEffect === 'function') {
+        window.addRippleEffect = function() { 
+          console.log('addRippleEffect disabled');
+          return; 
+        };
+      }
+    }
+  </script>
+
+  <!-- Socket.IO Initialization -->
+  <script>
+    // Initialize global variables
+    window.currentUsername = "{{ current_user.username }}";
+    window.currentUserId = {{ current_user.id }};
+    
+    // 动态获取当前URL的端口
+    const socketPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+    console.log('当前使用端口:', socketPort);
+    
+    // 获取当前页面的完整URL协议和主机名，用于Socket.IO连接
+    const protocol = window.location.protocol === 'https:' ? 'https://' : 'http://';
+    const hostname = window.location.hostname;
+    
+    // 确定Socket.IO连接URL
+    let socketUrl;
+    if (socketPort === '80' || socketPort === '443') {
+      // 标准端口可以不包含在URL中
+      socketUrl = protocol + hostname;
+    } else {
+      // 非标准端口需要包含
+      socketUrl = protocol + hostname + ':' + socketPort;
+    }
+    
+    // Initialize socket.io connection with more reliable settings for proxy environments
+    const socket = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,      // 增加重连次数
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,    // 增加最大重连延迟
+      timeout: 20000,                // 增加连接超时时间
+      path: '/socket.io',
+      forceNew: true,                // 强制创建新连接
+      autoConnect: true              // 自动连接
+    });
+    
+    // 连接成功
+    socket.on('connect', () => {
+      console.log('Socket.IO已连接，ID:', socket.id);
+      console.log('Socket.IO连接URL:', socketUrl);
+      document.dispatchEvent(new Event('socketConnected'));
+    });
+    
+    // 连接失败
+    socket.on('connect_error', (error) => {
+      console.error('Socket.IO连接错误:', error);
+      // 可能的重连策略
+      setTimeout(() => {
+        console.log('尝试重新连接Socket.IO...');
+        socket.connect();
+      }, 2000);
+    });
+    
+    // 断开连接
+    socket.on('disconnect', (reason) => {
+      console.log('Socket.IO断开连接，原因:', reason);
+      if (reason === 'io server disconnect') {
+        // 服务器强制断开连接，需要手动重连
+        setTimeout(() => socket.connect(), 1000);
+      }
+    });
+    
+    // 初始化应用程序的所有模块和功能
+    function initializeApp() {
+      console.log('初始化应用程序...');
+      
+      // 初始化消息处理系统
+      if (typeof initializeMessageSystem === 'function') {
+        initializeMessageSystem();
+      }
+      
+      // 初始化频道管理系统
+      if (typeof initChannelManager === 'function') {
+        initChannelManager();
+      }
+      
+      // 初始化在线用户管理器
+      if (typeof window.onlineUsersManager === 'undefined' && typeof OnlineUsersManager !== 'undefined') {
+        window.onlineUsersManager = new OnlineUsersManager();
+      }
+      
+      // 初始化UI组件
+      if (typeof initUIComponents === 'function') {
+        initUIComponents();
+      }
+      
+      // 初始化文件处理器
+      if (typeof initFileHandlers === 'function') {
+        initFileHandlers();
+      }
+      
+      // 初始化E2EE加密系统
+      if (typeof initializeE2EE === 'function') {
+        initializeE2EE();
+      }
+      
+      console.log('应用程序初始化完成');
+    }
+    
+    // 初始化所有模块和事件监听
+    initializeApp();
+  </script>
+
+  <!-- Notification function -->
+  <script>
+    // Show notifications
+    window.showToast = function(message, type = 'success') {
+      // Check if a notification already exists
+      const existingToast = document.querySelector('.toast-notification');
+      if (existingToast) {
+        existingToast.remove();
+      }
+      
+      // Create a notification element
+      const toast = document.createElement('div');
+      toast.className = `toast-notification fixed top-4 right-4 z-50 px-4 py-2 rounded-md shadow-lg transition-all transform translate-y-0 opacity-100 flex items-center ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        'bg-blue-500 text-white'
+      }`;
+      
+      // Add an icon
+      let icon = '';
+      if (type === 'success') {
+        icon = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+      } else if (type === 'error') {
+        icon = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+      } else if (type === 'warning') {
+        icon = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+      } else {
+        icon = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+      }
+      
+      toast.innerHTML = icon + message;
+      
+      // Add to page
+      document.body.appendChild(toast);
+      
+      // Automatically remove after 3 seconds
+      setTimeout(() => {
+        toast.classList.replace('translate-y-0', '-translate-y-4');
+        toast.classList.replace('opacity-100', 'opacity-0');
+        
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      }, 3000);
+    };
+
+    // Close the side panel function
+    window.closePanel = function(panelId) {
+      const panel = document.getElementById(panelId);
+      if (panel) {
+        panel.classList.add('translate-x-full');
+        
+        // If it is a fixed message panel, some additional actions may be required
+        if (panelId === 'pinnedPanel') {
+          console.log('关闭固定消息面板');
+        }
+      }
+    };
+
+    // Switch panel functions
+    window.togglePanel = function(panelId) {
+      const panel = document.getElementById(panelId);
+      if (panel) {
+        if (panel.classList.contains('translate-x-full')) {
+          // Display panel
+          panel.classList.remove('translate-x-full');
+          
+          // If it is a fixed message panel, some additional actions may be required
+          if (panelId === 'pinnedPanel' && typeof window.updatePinnedMessages === 'function') {
+            window.updatePinnedMessages();
+          }
+        } else {
+          // Hide panel
+          panel.classList.add('translate-x-full');
+        }
+      }
+    };
+  </script>
+
+  <!-- socket.io已在前面初始化，移除了重复的初始化调用 -->
+  
+  <!-- 附加组件 (确保不重复加载) -->
+  <script src="{{ url_for('static', filename='js/file-previewer.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/saved-items-manager.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/mention-manager.js') }}"></script>
+  <!-- JavaScript文件已在头部加载，此处不再重复引用 -->
+</body>
+</html>

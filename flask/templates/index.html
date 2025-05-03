@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Internal Chat - Welcome</title>
+  
+  <!-- Tailwind CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  
+  <!-- Custom styles -->
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  
+  <style>
+    /* Basic styles */
+    .water-gradient {
+      background: linear-gradient(180deg, #1E40AF 0%, #3B82F6 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Water surface effect */
+    .water-surface {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(30, 64, 175, 0.3);
+    }
+    
+    .water-ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      transform: scale(0);
+      pointer-events: none;
+    }
+    
+    /* Raindrop effect */
+    .rain-drop {
+      position: absolute;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.25) 100%);
+      border-radius: 50%;
+      animation-name: rain-fall;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+    
+    @keyframes rain-fall {
+      0% {
+        transform: translateY(-100vh);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.7;
+      }
+      95% {
+        opacity: 0.7;
+      }
+      100% {
+        transform: translateY(100vh);
+      opacity: 0;
+      }
+    }
+    
+    /* Ripple style */
+    .water-wave {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 200px;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.15)" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,229.3C672,224,768,192,864,186.7C960,181,1056,203,1152,202.7C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+      background-size: 100% 100%;
+      animation: wave 15s linear infinite;
+    }
+    
+    .water-wave:nth-child(2) {
+      bottom: -10px;
+      animation: wave 25s linear reverse infinite;
+      opacity: 0.5;
+    }
+    
+    .water-wave:nth-child(3) {
+      bottom: -20px;
+      animation: wave 20s linear infinite;
+      opacity: 0.3;
+    }
+    
+    @keyframes wave {
+      0% { background-position-x: 0; }
+      100% { background-position-x: 100vw; }
+    }
+    
+    /* Text hover animation */
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-15px); }
+      100% { transform: translateY(0px); }
+    }
+    
+    .float-animation {
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    /* Card style */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Button hover effect */
+    .hover-rise {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .hover-rise:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(90deg, #ffffff 0%, #e0f2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+    }
+    
+    /* Flicker animation */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .pulse-animation {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    /* Page entry animation */
+    @keyframes fade-in-up {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .fade-in-up {
+      animation: fade-in-up 1s ease forwards;
+    }
+    
+    /* Button special effects */
+    .btn-primary {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn-primary:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(transparent, rgba(255, 255, 255, 0.1), transparent);
+      transform: rotate(30deg);
+      transition: transform 0.6s ease;
+    }
+    
+    .btn-primary:hover::after {
+      transform: rotate(30deg) translate(50%, 50%);
+    }
+  </style>
+  
+  <style>
+    /* Water ripple effect animation */
+    @keyframes ripple-effect {
+      0% {
+        transform: scale(0);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(5);
+      opacity: 0;
+    }
+    }
+    
+    /* Ripple button effect */
+    @keyframes ripple {
+      to {
+        transform: scale(2.5);
+      opacity: 0;
+    }
+    }
+  </style>
+</head>
+
+<body class="h-screen overflow-hidden font-sans bg-blue-900 text-white theme-transition">
+  <main class="relative h-full w-full water-gradient overflow-hidden" id="rainCanvas">
+    <!-- Raindrops and water ripple effects will be dynamically generated via JS -->
+    
+    <!-- Water wave layer -->
+    <div class="water-wave"></div>
+    <div class="water-wave"></div>
+    <div class="water-wave"></div>
+    
+    <!-- Content layer -->
+    <div class="relative z-10 h-full flex flex-col items-center justify-center px-4">
+      <!-- Logo and welcome title -->
+      <div class="text-center mb-12 fade-in-up" style="animation-delay: 0.2s">
+        <div class="flex items-center justify-center mb-6">
+          <div class="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-blue-800 shadow-xl flex items-center justify-center text-2xl font-bold overflow-hidden float-animation">
+            <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Internal Chat" class="w-full h-full object-contain p-1" onerror="this.outerHTML='I'"/>
+            </div>
+          </div>
+        <h1 class="text-4xl md:text-6xl font-bold gradient-text mb-4">Internal Chat</h1>
+        <p class="text-xl text-blue-100 max-w-lg mx-auto">Secure, efficient, and beautifully designed for your team's workflow.</p>
+            </div>
+            
+      <!-- Action buttons -->
+      <div class="flex flex-col sm:flex-row gap-3 mt-8">
+        <a href="{{ url_for('auth.login') }}" class="btn-primary hover-rise px-8 py-3 rounded-full text-lg font-medium">
+          Sign In
+        </a>
+        <a href="{{ url_for('auth.register') }}" class="btn-primary hover-rise px-8 py-3 rounded-full text-lg font-medium">
+          Create Account
+        </a>
+      </div>
+      
+      <!-- Feature cards -->
+      <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl fade-in-up" style="animation-delay: 0.6s">
+        <div class="glass-card p-6 hover-rise">
+          <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+          <h3 class="text-xl font-bold mb-2">End-to-end Encryption</h3>
+          <p class="text-blue-100">Your conversations are secure with advanced encryption technology.</p>
+          </div>
+          
+        <div class="glass-card p-6 hover-rise">
+          <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          <h3 class="text-xl font-bold mb-2">Real-time Messaging</h3>
+          <p class="text-blue-100">Exchange messages in real-time with your team members.</p>
+      </div>
+
+        <div class="glass-card p-6 hover-rise">
+          <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+              </div>
+          <h3 class="text-xl font-bold mb-2">Resource Management</h3>
+          <p class="text-blue-100">Easily share and manage resources within your team.</p>
+            </div>
+          </div>
+        </div>
+
+    <!-- Customer service popup -->
+    <div id="helpModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+      <div class="absolute inset-0 bg-black bg-opacity-50" id="helpModalOverlay"></div>
+      <div class="glass-card p-6 max-w-md w-full mx-4 relative z-10 transform transition-all fade-in-up">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold">Customer Support</h3>
+          <button id="closeHelpModal" class="text-white hover:text-blue-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+        <div class="mb-6">
+          <div class="flex items-center mb-4">
+            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+            <div>
+              <p class="font-medium">Online Support</p>
+              <p class="text-sm text-blue-200">Usually replies within minutes</p>
+            </div>
+            </div>
+            
+          <div class="bg-white bg-opacity-10 rounded-lg p-4 mb-4">
+            <p class="text-sm mb-2">Hello! How can I help you today?</p>
+            <div class="flex space-x-2">
+              <button class="help-quick-btn text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-full">Account Issues</button>
+              <button class="help-quick-btn text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-full">Features</button>
+              <button class="help-quick-btn text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-full">Contact Us</button>
+              </div>
+            </div>
+            
+        <div class="relative">
+            <input type="text" id="helpMessageInput" placeholder="Type your question..." class="w-full bg-white bg-opacity-10 border border-transparent focus:border-blue-300 rounded-full py-2 px-4 text-white placeholder-blue-200">
+            <button id="sendHelpMessage" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-300 hover:text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+        <div class="text-xs text-center text-blue-200">
+          <p>Working hours: Monday to Friday 9:00-18:00</p>
+          <p class="mt-1">Email: support@internalchat.com</p>
+                </div>
+                  </div>
+                </div>
+  </main>
+  
+  <script>
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 移除深色模式相关代码，替换为客服帮助功能
+      const helpButton = document.getElementById('helpButton');
+      const helpModal = document.getElementById('helpModal');
+      const closeHelpModal = document.getElementById('closeHelpModal');
+      const helpModalOverlay = document.getElementById('helpModalOverlay');
+      const helpQuickBtns = document.querySelectorAll('.help-quick-btn');
+      const helpMessageInput = document.getElementById('helpMessageInput');
+      const sendHelpMessage = document.getElementById('sendHelpMessage');
+      
+      // 开启客服弹窗
+      if (helpButton && helpModal) {
+        helpButton.addEventListener('click', function(e) {
+          helpModal.classList.remove('hidden');
+          // 按钮涟漪效果
+          createRipple(e, this);
+        });
+      }
+      
+      // 关闭客服弹窗
+      if (closeHelpModal && helpModal) {
+        closeHelpModal.addEventListener('click', function() {
+          helpModal.classList.add('hidden');
+        });
+      }
+      
+      // 点击背景关闭弹窗
+      if (helpModalOverlay && helpModal) {
+        helpModalOverlay.addEventListener('click', function() {
+          helpModal.classList.add('hidden');
+        });
+      }
+      
+      // 快捷回复按钮
+      if (helpQuickBtns && helpQuickBtns.length > 0) {
+        helpQuickBtns.forEach(btn => {
+          btn.addEventListener('click', function() {
+            const responseContainer = document.createElement('div');
+            responseContainer.classList.add('bg-white', 'bg-opacity-10', 'rounded-lg', 'p-4', 'mb-4');
+            
+            const question = document.createElement('p');
+            question.classList.add('text-sm', 'text-right', 'mb-2', 'text-blue-300');
+            question.textContent = this.textContent;
+            
+            const answer = document.createElement('p');
+            answer.classList.add('text-sm', 'mt-4');
+            
+            switch(this.textContent) {
+              case 'Account Issues':
+                answer.textContent = "If you're experiencing account-related issues, please verify your registered email address or try resetting your password. For more detailed information, please refer to the Account Issues section in our Help Center.";
+                break;
+              case 'Features':
+                answer.textContent = "Internal Chat provides end-to-end encrypted messaging, team collaboration tools, and resource management capabilities. You can create channels, share files, and conduct video conferences. For more detailed feature information, please visit our Features page.";
+                break;
+              case 'Contact Us':
+                answer.textContent = "You can contact us via email at support@internalchat.com, or call our customer service hotline during working hours at 400-123-4567. Our working hours are Monday to Friday from 9:00 to 18:00.";
+                break;
+              default:
+                answer.textContent = "Thank you for your inquiry. Our customer service team will respond to your question as soon as possible.";
+            }
+            
+            responseContainer.appendChild(question);
+            responseContainer.appendChild(answer);
+            
+            // 将回复插入到输入框之前
+            const parentElement = document.querySelector('#helpMessageInput').parentElement.parentElement;
+            parentElement.insertBefore(responseContainer, parentElement.lastElementChild);
+          });
+        });
+      }
+      
+      // 发送消息
+      if (sendHelpMessage && helpMessageInput) {
+        sendHelpMessage.addEventListener('click', sendHelp);
+        helpMessageInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            sendHelp();
+          }
+        });
+        
+        function sendHelp() {
+          const message = helpMessageInput.value.trim();
+          if (message) {
+            const responseContainer = document.createElement('div');
+            responseContainer.classList.add('bg-white', 'bg-opacity-10', 'rounded-lg', 'p-4', 'mb-4');
+            
+            const question = document.createElement('p');
+            question.classList.add('text-sm', 'text-right', 'mb-2', 'text-blue-300');
+            question.textContent = message;
+            
+            const answer = document.createElement('p');
+            answer.classList.add('text-sm', 'mt-4');
+            answer.textContent = "Thank you for your inquiry. Our customer service team will respond to your question as soon as possible.";
+            
+            responseContainer.appendChild(question);
+            responseContainer.appendChild(answer);
+            
+            // 将回复插入到输入框之前
+            const parentElement = helpMessageInput.parentElement.parentElement;
+            parentElement.insertBefore(responseContainer, parentElement.lastElementChild);
+            
+            // 清空输入框
+            helpMessageInput.value = '';
+          }
+        }
+      }
+      
+      // 创建雨滴效果
+      const rainCanvas = document.getElementById('rainCanvas');
+      if (rainCanvas) {
+        createRaindrops(rainCanvas);
+        
+        // 点击屏幕产生波纹
+        rainCanvas.addEventListener('click', function(e) {
+          createWaterRipple(e.clientX, e.clientY, rainCanvas);
+        });
+      }
+      
+      // 检查登录状态
+      checkLoginStatus();
+    });
+    
+    // 创建雨滴效果
+    function createRaindrops(container) {
+      const raindropsCount = Math.floor(window.innerWidth / 15); // 根据屏幕宽度调整雨滴数量
+      
+      for (let i = 0; i < raindropsCount; i++) {
+        const raindrop = document.createElement('div');
+        raindrop.classList.add('rain-drop');
+        
+        // 随机设置雨滴参数
+        const size = Math.random() * 3 + 1; // 雨滴大小: 1-4px
+        const posX = Math.random() * 100; // 水平位置: 0-100%
+        const duration = Math.random() * 2 + 1; // 下落速度: 1-3秒
+        const delay = Math.random() * 5; // 出现延迟: 0-5秒
+        
+        raindrop.style.left = `${posX}%`;
+        raindrop.style.width = `${size}px`;
+        raindrop.style.height = `${size * (Math.random() * 10 + 20)}px`; // 长度为宽度的20-30倍
+        raindrop.style.animationDuration = `${duration}s`;
+        raindrop.style.animationDelay = `${delay}s`;
+        
+        container.appendChild(raindrop);
+      }
+    }
+    
+    // 创建水波纹效果
+    function createWaterRipple(x, y, container) {
+      const ripple = document.createElement('div');
+      ripple.classList.add('water-ripple');
+      
+      // 设置波纹大小和位置
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      ripple.style.animation = 'ripple-effect 2.5s cubic-bezier(0.23, 1, 0.32, 1)';
+      
+      container.appendChild(ripple);
+      
+      // 水波纹动画完成后移除元素
+      setTimeout(() => {
+        if (ripple && ripple.parentNode === container) {
+          container.removeChild(ripple);
+        }
+      }, 2500);
+    }
+    
+    // 按钮涟漪效果
+    function createRipple(e, button) {
+      const rect = button.getBoundingClientRect();
+      
+      const circle = document.createElement('span');
+      circle.classList.add('ripple-effect');
+      
+      const diameter = Math.max(rect.width, rect.height);
+      const radius = diameter / 2;
+      
+      const x = e.clientX - rect.left - radius;
+      const y = e.clientY - rect.top - radius;
+      
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${x}px`;
+      circle.style.top = `${y}px`;
+      circle.style.position = 'absolute';
+      circle.style.borderRadius = '50%';
+      circle.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+      circle.style.transform = 'scale(0)';
+      circle.style.animation = 'ripple 0.6s linear';
+      circle.style.pointerEvents = 'none';
+      
+      button.appendChild(circle);
+      
+          setTimeout(() => {
+        if (circle && circle.parentNode === button) {
+          button.removeChild(circle);
+        }
+      }, 600);
+    }
+    
+    // 检查用户登录状态
+    function checkLoginStatus() {
+      const userData = sessionStorage.getItem('user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user.isLoggedIn) {
+            // 用户已登录，显示欢迎回来信息或自动跳转
+            createWelcomeBack(user.username);
+          }
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+        }
+      }
+    }
+    
+    // 创建欢迎回来提示
+    function createWelcomeBack(username) {
+      const welcomeBack = document.createElement('div');
+      welcomeBack.classList.add('glass-card', 'fixed', 'top-6', 'right-6', 'p-4', 'z-50', 'fade-in-up');
+      welcomeBack.innerHTML = `
+        <div class="flex items-center">
+          <div class="text-xl mr-3">👋</div>
+                  <div>
+            <p class="font-medium">Welcome back, ${username}!</p>
+            <div class="flex mt-2 space-x-2">
+              <button id="goToApp" class="text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded">Continue to app</button>
+              <button id="dismissWelcome" class="text-sm bg-transparent hover:bg-blue-800 px-3 py-1 rounded">Dismiss</button>
+                  </div>
+              </div>
+            </div>
+          `;
+          
+      document.body.appendChild(welcomeBack);
+      
+      // 设置按钮事件
+      const goToAppBtn = document.getElementById('goToApp');
+      const dismissBtn = document.getElementById('dismissWelcome');
+      
+      if (goToAppBtn) {
+        goToAppBtn.addEventListener('click', function() {
+          window.location.href = './index.html'; // 跳转到主应用页面
+        });
+      }
+      
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', function() {
+          welcomeBack.classList.add('opacity-0');
+          welcomeBack.style.transition = 'opacity 0.5s ease';
+          setTimeout(() => {
+            if (document.body.contains(welcomeBack)) {
+              document.body.removeChild(welcomeBack);
+            }
+            }, 500);
+          });
+      }
+    }
+  </script>
+</body>
+</html>

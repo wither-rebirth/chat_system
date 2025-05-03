@@ -1,0 +1,1888 @@
+/* 自定义滚动条样式 */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 暗黑模式滚动条样式 */
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 主题过渡效果 */
+.theme-transition {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 暗黑模式切换动画 */
+.dark-mode-active *,
+.light-mode-active * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* 增强深色模式过渡时的视觉效果 */
+.dark-mode-active .bg-white {
+  background-color: #1f2937;
+}
+
+.light-mode-active .dark\:bg-gray-800 {
+  background-color: #fff;
+}
+
+/* 暗黑模式和亮色模式切换时的优化动画 */
+@keyframes fadeToBlack {
+  from { background-color: #ffffff; }
+  to { background-color: #1a202c; }
+}
+
+@keyframes fadeToWhite {
+  from { background-color: #1a202c; }
+  to { background-color: #ffffff; }
+}
+
+.dark-mode-active body {
+  animation: fadeToBlack 0.3s ease forwards;
+}
+
+.light-mode-active body {
+  animation: fadeToWhite 0.3s ease forwards;
+}
+
+/* 右侧面板过渡增强 */
+.side-panel {
+  transform: translateX(100%);
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  contain: layout style paint;
+}
+
+.side-panel.translate-x-0 {
+  transform: translateX(0);
+}
+
+.side-panel.translate-x-full {
+  transform: translateX(100%);
+}
+
+/* 添加阴影过渡效果 */
+.side-panel {
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.side-panel.shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* 优化滚动条样式 */
+.side-panel .custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.side-panel .custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.side-panel .custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.side-panel .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+  border: none;
+}
+
+.side-panel .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
+}
+
+/* 暗色模式适配 */
+.dark .side-panel .custom-scrollbar {
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+}
+
+.dark .side-panel .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+}
+
+.dark .side-panel .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+/* 新消息淡入动画 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* 搜索框相关样式 */
+.search-active input {
+  border-color: #3B82F6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* 搜索框聚焦时的脉动效果 */
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.search-pulse {
+  animation: pulse-border 2s infinite;
+}
+
+/* 搜索高亮的极致优雅方案 - 增强白天模式 */
+.search-active-mode .js-search-highlighted {
+  position: relative;
+  z-index: 1;
+}
+
+.search-active-mode .js-search-highlighted::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 38%;
+  background: linear-gradient(90deg, 
+    rgba(255, 214, 0, 0.25) 0%, 
+    rgba(255, 193, 7, 0.45) 50%, 
+    rgba(255, 214, 0, 0.25) 100%);
+  border-radius: 4px;
+  z-index: -1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  animation: soft-highlight 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.3s ease;
+}
+
+.search-active-mode .js-search-highlighted:hover::after {
+  height: 42%;
+  background: linear-gradient(90deg, 
+    rgba(255, 214, 0, 0.3) 0%, 
+    rgba(255, 193, 7, 0.55) 50%, 
+    rgba(255, 214, 0, 0.3) 100%);
+  bottom: -1.5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* 美化暗色模式下的高亮 */
+.dark .search-active-mode .js-search-highlighted::after {
+  background: linear-gradient(90deg, 
+    rgba(255, 165, 0, 0.2) 0%, 
+    rgba(255, 177, 25, 0.4) 50%, 
+    rgba(255, 165, 0, 0.2) 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dark .search-active-mode .js-search-highlighted:hover::after {
+  background: linear-gradient(90deg, 
+    rgba(255, 165, 0, 0.25) 0%, 
+    rgba(255, 177, 25, 0.5) 50%, 
+    rgba(255, 165, 0, 0.25) 100%);
+}
+
+/* 添加文本轻微阴影增强可见性 */
+.search-active-mode .js-search-highlighted {
+  text-shadow: 0 0 0.5px rgba(0, 0, 0, 0.1);
+}
+
+.dark .search-active-mode .js-search-highlighted {
+  text-shadow: 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+/* 第一个高亮特效 - 更明显 */
+.search-active-mode .first-highlight::after {
+  animation: first-highlight-pulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) !important;
+  height: 45% !important;
+  background: linear-gradient(90deg, 
+    rgba(59, 130, 246, 0.25) 0%, 
+    rgba(59, 130, 246, 0.5) 50%, 
+    rgba(59, 130, 246, 0.25) 100%) !important;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.15) !important;
+}
+
+.dark .search-active-mode .first-highlight::after {
+  background: linear-gradient(90deg, 
+    rgba(96, 165, 250, 0.25) 0%, 
+    rgba(96, 165, 250, 0.45) 50%, 
+    rgba(96, 165, 250, 0.25) 100%) !important;
+  box-shadow: 0 2px 4px rgba(96, 165, 250, 0.2) !important;
+}
+
+@keyframes first-highlight-pulse {
+  0% { opacity: 0.6; transform: scaleY(0.95); }
+  50% { opacity: 1; transform: scaleY(1.15); }
+  100% { opacity: 0.8; transform: scaleY(1); }
+}
+
+/* 高亮淡入动画 */
+@keyframes soft-highlight {
+  0% { opacity: 0; transform: scaleY(0.5) translateY(4px); }
+  70% { opacity: 1; transform: scaleY(1.08) translateY(-1px); }
+  100% { opacity: 1; transform: scaleY(1) translateY(0); }
+}
+
+/* 高亮淡出动画 */
+.search-clearing .js-search-highlighted::after {
+  animation: soft-fade-out 0.3s ease-out forwards !important;
+}
+
+@keyframes soft-fade-out {
+  0% { opacity: 1; transform: scaleY(1); }
+  100% { opacity: 0; transform: scaleY(0.85) translateY(2px); }
+}
+
+/* 悬停优化 - 增强对比度 */
+.search-active-mode .js-search-highlighted {
+  transition: all 0.2s ease;
+}
+
+.search-active-mode .js-search-highlighted:hover {
+  color: rgba(0, 0, 0, 0.9);
+  font-weight: 500;
+}
+
+.dark .search-active-mode .js-search-highlighted:hover {
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+/* 隐藏导航按钮 */
+#searchNavButtons {
+  display: none !important;
+}
+
+/* 清除旧的高亮样式 */
+mark.search-highlight {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: inherit !important;
+  font-weight: inherit !important;
+  text-decoration: inherit !important;
+}
+
+/* 清除旧的CSS */
+.search-active-mode .js-search-highlighted {
+  background: none !important;
+  animation: none !important;
+}
+
+.dark .search-active-mode .js-search-highlighted {
+  background: none !important;
+}
+
+@keyframes gentle-highlight {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 0; }
+}
+
+/* 搜索结果数量徽章动画 */
+.badge-pop-in {
+  animation: badge-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes badge-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  70% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.badge-fade-out {
+  animation: badge-fade 0.3s ease-out forwards;
+}
+
+@keyframes badge-fade {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+/* 搜索导航按钮样式 */
+#searchNavButtons {
+  display: none !important;
+}
+
+/* 搜索按钮悬停提示 */
+#prevResultBtn::before,
+#nextResultBtn::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  white-space: nowrap;
+}
+
+#prevResultBtn:hover::before,
+#nextResultBtn:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 侧边栏搜索样式 */
+.sidebar-search input {
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.sidebar-search input:focus {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 为了区分两个搜索框 */
+.sidebar-search input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.topbar-search input::placeholder {
+  color: rgba(107, 114, 128, 0.5);
+}
+
+/* 频道图标美化 */
+.channel-item span.text-white\/80[class*="mr-1.5"] {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* 频道按钮动画 */
+.channel-list button {
+  transform-origin: left center !important;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              background-color 0.15s ease,
+              color 0.15s ease !important;
+  will-change: transform, background-color;
+  transform: translateZ(0) !important; /* 启用硬件加速 */
+  backface-visibility: hidden !important; /* 防止闪烁 */
+}
+
+.channel-list button:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* 私信头像美化 */
+.channel-item .relative .w-4.h-4.rounded-full {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.channel-item button:hover .relative .w-4.h-4.rounded-full {
+  transform: scale(1.1);
+}
+
+/* 状态指示器脉冲动画 */
+.pulse-animation {
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 0 rgba(80, 220, 100, 0.4);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(80, 220, 100, 0.4);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 5px rgba(80, 220, 100, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(80, 220, 100, 0);
+  }
+}
+
+/* 工具提示美化 */
+.tooltip-text {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%) translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 100;
+}
+
+.group:hover .tooltip-text {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 频道分类标题 */
+.channel-category-title {
+  position: relative;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* 侧边栏整体增强 */
+aside {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+/* 美化频道组标题悬停效果 */
+.channel-group > div:first-child {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.channel-group > div:first-child::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.channel-group > div:first-child:hover::after {
+  transform: translateX(100%);
+}
+
+/* 渲染性能关键优化 */
+.channel-list, 
+.children-container,
+.channel-item,
+.channel-group,
+.expand-icon,
+.channel-item button {
+  contain: style layout;
+  content-visibility: auto;
+  contain-intrinsic-size: auto;
+  isolation: isolate;
+  transform-origin: center top; /* 更好的展开折叠感觉 */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  -o-transform: translateZ(0);
+}
+
+/* 动画帧率优化 */
+@media (prefers-reduced-motion: no-preference) {
+  .channel-list,
+  .children-container,
+  .expand-icon svg,
+  .channel-group > div:first-child svg,
+  .channel-item button {
+    animation-duration: 0.2s;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+/* 针对Safari的优化 */
+@supports (-webkit-hyphens:none) {
+  .channel-list, 
+  .children-container {
+    transform: translate3d(0,0,0);
+    -webkit-transform: translate3d(0,0,0);
+  }
+}
+
+/* 针对Firefox的优化 */
+@-moz-document url-prefix() {
+  .channel-list, 
+  .children-container {
+    transform: translate(0,0);
+    will-change: opacity, height;
+  }
+}
+
+/* 为展开箭头添加弹性动画 */
+.expand-icon svg.rotate-active,
+.channel-group > div:first-child svg.rotate-90 {
+  animation: bounceRotate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bounceRotate {
+  0% { transform: rotate(0deg); }
+  70% { transform: rotate(100deg); }
+  85% { transform: rotate(85deg); }
+  100% { transform: rotate(90deg); }
+}
+
+/* 平滑的点击波纹效果 */
+.channel-item button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.5s ease, transform 0.3s ease;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.channel-item button:active::after {
+  opacity: 1;
+  transform: scale(1.8);
+  transition: opacity 0.1s ease, transform 0.3s cubic-bezier(.22,1,.36,1);
+}
+
+/* 确保展开状态流畅可见 */
+.channel-group[data-state="expanded"] .channel-list,
+.children-container.expanded {
+  content-visibility: visible !important;
+  display: block !important;
+  visibility: visible !important;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+/* 频道菜单样式 */
+#channelMenuBtn {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  outline: none !important;
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+#channelMenuBtn svg {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+#channelMenuBtn:hover svg {
+  color: #4b5563; /* 深灰色，悬停时更明显 */
+}
+
+#channelMenuBtn:active {
+  transform: scale(0.95);
+}
+
+/* 添加一个微妙的Bounce动画效果 */
+@keyframes svgBounce {
+  0% { transform: rotate(0deg); }
+  60% { transform: rotate(195deg); }
+  80% { transform: rotate(175deg); }
+  100% { transform: rotate(180deg); }
+}
+
+@keyframes svgBounceReverse {
+  0% { transform: rotate(180deg); }
+  60% { transform: rotate(-15deg); }
+  80% { transform: rotate(10deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.channelMenuBtn-rotate-down svg {
+  animation: svgBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.channelMenuBtn-rotate-up svg {
+  animation: svgBounceReverse 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+#channelMenuDropdown {
+  transform-origin: top;
+  transform: scaleY(0);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+#channelMenuDropdown.visible {
+  transform: scaleY(1);
+  opacity: 1;
+  visibility: visible;
+}
+
+#channelMenuDropdown button {
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+#channelMenuDropdown button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 70%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+#channelMenuDropdown button:active::after {
+  opacity: 1;
+}
+
+#channelMenuDropdown button svg {
+  transition: transform 0.2s ease;
+}
+
+#channelMenuDropdown button:hover svg {
+  transform: scale(1.1);
+}
+
+/* 模态框样式优化 */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+  transition: backdrop-filter 0.3s ease, opacity 0.3s ease;
+}
+
+/* 资源管理和频道管理模态框增强 */
+#resourceManagementModal,
+#channelManagementModal {
+  transition: opacity 0.3s ease;
+}
+
+#resourceManagementModal > div,
+#channelManagementModal > div {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* 暗色模式下的模态框阴影 */
+.dark #resourceManagementModal > div,
+.dark #channelManagementModal > div {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* 拖放上传区域优化 */
+.border-dashed {
+  transition: all 0.15s ease;
+}
+
+.border-dashed:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background-color: rgba(59, 130, 246, 0.03);
+}
+
+.dark .border-dashed:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* 资源卡片美化 */
+.resource-card {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.resource-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .resource-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.resource-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, #3B82F6, #4F46E5);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resource-card:hover::before {
+  opacity: 1;
+}
+
+/* 资源和频道管理模态框的内容区域美化 */
+#resourceManagementModal .flex-1.overflow-y-auto,
+#channelManagementModal .flex-1.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) rgba(229, 231, 235, 0.1);
+}
+
+#resourceManagementModal .flex-1.overflow-y-auto::-webkit-scrollbar,
+#channelManagementModal .flex-1.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+#resourceManagementModal .flex-1.overflow-y-auto::-webkit-scrollbar-track,
+#channelManagementModal .flex-1.overflow-y-auto::-webkit-scrollbar-track {
+  background: rgba(229, 231, 235, 0.1);
+}
+
+#resourceManagementModal .flex-1.overflow-y-auto::-webkit-scrollbar-thumb,
+#channelManagementModal .flex-1.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.dark #resourceManagementModal .flex-1.overflow-y-auto::-webkit-scrollbar-thumb,
+.dark #channelManagementModal .flex-1.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+}
+
+/* 优化按钮过渡效果 */
+#resourceManagementModal button,
+#channelManagementModal button {
+  transition: all 0.15s ease;
+}
+
+/* 模态框打开时的页面过渡 */
+body.overflow-hidden {
+  transition: background-color 0.2s ease;
+}
+
+/* 平滑滚动效果 */
+#resourceManagementModal .flex-1.overflow-y-auto,
+#channelManagementModal .flex-1.overflow-y-auto {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 模态框中的分类标签美化 */
+.px-2\.5.py-1.bg-blue-50 {
+  position: relative;
+  overflow: hidden;
+}
+
+.px-2\.5.py-1.bg-blue-50::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.px-2\.5.py-1.bg-blue-50:hover::after {
+  transform: scaleX(1);
+}
+
+/* 通知提示动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-notification {
+  animation: fadeInUp 0.3s ease forwards;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-left: 4px solid #3B82F6;
+}
+
+.dark .toast-notification {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 增强模态框中的输入框样式 */
+#resourceManagementModal input,
+#channelManagementModal input,
+#resourceManagementModal select,
+#channelManagementModal select {
+  transition: all 0.2s ease;
+}
+
+#resourceManagementModal input:focus,
+#channelManagementModal input:focus,
+#resourceManagementModal select:focus,
+#channelManagementModal select:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  border-color: #3B82F6;
+}
+
+.dark #resourceManagementModal input:focus,
+.dark #channelManagementModal input:focus,
+.dark #resourceManagementModal select:focus,
+.dark #channelManagementModal select:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* 成员项美化 */
+.member-item {
+  transition: all 0.2s ease;
+}
+
+.member-item:hover {
+  background-color: rgba(249, 250, 251, 0.8);
+  transform: translateX(2px);
+}
+
+.dark .member-item:hover {
+  background-color: rgba(55, 65, 81, 0.8);
+}
+
+/* 成员操作按钮美化 */
+.member-actions button {
+  transition: all 0.15s ease;
+}
+
+.member-actions button:hover {
+  transform: scale(1.1);
+}
+
+/* 成员角色标签美化 */
+.member-role {
+  position: relative;
+  overflow: hidden;
+}
+
+.member-role::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.member-role-admin::after {
+  background: linear-gradient(to bottom, #F87171, #EF4444);
+}
+
+.member-role-mod::after {
+  background: linear-gradient(to bottom, #10B981, #059669);
+}
+
+.member-role:hover::after {
+  opacity: 1;
+}
+
+/* 添加打字机效果的占位符文本动画 */
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.typing-placeholder::after {
+  content: '|';
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  from, to { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* 波纹动画效果 */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(0);
+  animation: none !important; /* 禁用动画 */
+  pointer-events: none;
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important; /* 完全隐藏 */
+  opacity: 0 !important;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(0); /* 不缩放 */
+    opacity: 0;
+  }
+}
+
+/* 暗色模式下的波纹效果 */
+.dark .ripple {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 资源详情过渡效果 */
+.resource-details {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+  opacity: 1;
+}
+
+.resource-details-icon {
+  transition: transform 0.3s ease;
+}
+
+/* 资源卡片美化 */
+.resource-card {
+  position: relative;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.resource-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .resource-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 添加成功提示样式 */
+.toast-notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  background-color: white;
+  color: #333;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.toast-notification.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.dark .toast-notification {
+  background-color: #2d3748;
+  color: #f7fafc;
+}
+
+/* 拖放上传动画 */
+.border-dashed {
+  transition: all 0.2s ease;
+}
+
+.border-dashed:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* 模态框内容动画 */
+.resource-details {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+  will-change: max-height, opacity;
+}
+
+/* 暗黑模式基本样式 */
+.dark body {
+  background-color: #1a202c;
+  color: #e5e7eb;
+}
+
+.dark .bg-white {
+  background-color: #1f2937;
+}
+
+.dark .text-gray-800 {
+  color: #e5e7eb;
+}
+
+.dark .text-gray-600 {
+  color: #d1d5db;
+}
+
+.dark .text-gray-700 {
+  color: #d1d5db;
+}
+
+.dark .text-gray-900 {
+  color: #f3f4f6;
+}
+
+.dark .text-gray-500 {
+  color: #9ca3af;
+}
+
+.dark .text-gray-400 {
+  color: #9ca3af;
+}
+
+.dark .bg-gray-50 {
+  background-color: #1f2937;
+}
+
+.dark .bg-gray-100 {
+  background-color: #273548;
+}
+
+.dark .bg-gray-200 {
+  background-color: #374151;
+}
+
+.dark .border {
+  border-color: #374151;
+}
+
+.dark .border-gray-200 {
+  border-color: #374151;
+}
+
+.dark .border-b {
+  border-bottom-color: #374151;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #374151;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: #2d3748;
+}
+
+.dark textarea,
+.dark input[type="text"],
+.dark input[type="url"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="search"],
+.dark select {
+  background-color: #374151;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+.dark textarea:focus,
+.dark input[type="text"]:focus,
+.dark input[type="url"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark input[type="search"]:focus,
+.dark select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* 暗黑模式下的下拉菜单和卡片 */
+.dark #channelMenuDropdown,
+.dark .card,
+.dark .dropdown-menu,
+.dark .modal-content {
+  background-color: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+.dark #channelMenuDropdown button {
+  color: #e5e7eb;
+}
+
+.dark #channelMenuDropdown button:hover {
+  background-color: #374151;
+}
+
+.dark #channelMenuDropdown svg {
+  color: #6b7280;
+}
+
+/* 侧边栏暗黑模式优化 */
+.dark aside {
+  background: linear-gradient(to bottom, #1e3a8a, #1e40af);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 改进暗黑模式下按钮和链接效果 */
+.dark a,
+.dark button {
+  transition: all 0.15s ease-out;
+}
+
+.dark button:active:not([disabled]),
+.dark a:active {
+  transform: scale(0.98);
+}
+
+.dark button:focus-visible,
+.dark a:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.5);
+  outline-offset: 2px;
+}
+
+/* 改进暗黑模式下的链接颜色和悬停效果 */
+.dark .text-blue-600 {
+  color: #60a5fa !important;
+}
+
+.dark .text-blue-600:hover {
+  color: #93c5fd !important;
+  text-decoration: none;
+}
+
+/* 暗黑模式下的消息面板 */
+.dark .bg-gray-100 {
+  background-color: #1f2937;
+}
+
+/* 暗黑模式下的消息悬停 */
+.dark .hover\:bg-gray-200\/50:hover {
+  background-color: rgba(55, 65, 81, 0.5);
+}
+
+/* 暗黑模式下的输入框背景 */
+.dark .bg-white {
+  background-color: #1f2937;
+}
+
+/* 模态框暗黑模式优化 */
+.dark #resourceManagementModal > div,
+.dark #channelManagementModal > div,
+.dark #editDescriptionModal > div,
+.dark #resourceFormModal > div,
+.dark #setHeaderModal,
+.dark #inviteModal > div,
+.dark #inviteMembersModal > div,
+.dark #editHeaderModal,
+.dark #allUsersModal > div {
+  background-color: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* 暗黑模式下的面板优化 */
+.dark #pinnedPanel,
+.dark #mentionsPanel,
+.dark #savedPanel {
+  background-color: #1f2937;
+  border-left-color: #374151;
+}
+
+/* 暗黑模式下的卡片组件 */
+.dark .bg-white.dark\:bg-gray-800.border {
+  border-color: #374151;
+}
+
+/* 暗黑模式下的分隔线 */
+.dark hr {
+  border-color: #374151;
+}
+
+/* 暗黑模式下的滚动条优化 */
+.dark .custom-scrollbar {
+  scroll-behavior: smooth;
+}
+
+/* 暗黑模式下的按钮悬停 */
+.dark .hover\:bg-gray-200:hover {
+  background-color: #374151;
+}
+
+.dark .hover\:text-gray-600:hover {
+  color: #e5e7eb;
+}
+
+/* 暗黑模式下的表格优化 */
+.dark table {
+  border-color: #374151;
+}
+
+.dark thead {
+  background-color: #273548;
+}
+
+.dark tr:not(:last-child) {
+  border-bottom-color: #374151;
+}
+
+/* 暗黑模式下的顶部导航栏 */
+.dark nav,
+.dark .top-bar {
+  background-color: #1f2937;
+  border-bottom-color: #374151;
+}
+
+/* 暗黑模式下的选项卡 */
+.dark .tabs {
+  border-bottom-color: #374151;
+}
+
+.dark .tab {
+  color: #9ca3af;
+}
+
+.dark .tab.active {
+  color: #60a5fa;
+  border-bottom-color: #60a5fa;
+}
+
+/* 暗黑模式下的通知徽章 */
+.dark .badge {
+  background-color: #1f2937;
+  color: #e5e7eb;
+}
+
+/* 添加深色模式下的阴影效果 */
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.dark .shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+.dark .shadow-md {
+  box-shadow: 0 6px 10px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+.dark .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* 暗黑模式下的颜色对比度增强 */
+.dark .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.dark .text-blue-800 {
+  color: #93c5fd;
+}
+
+.dark .bg-blue-100 {
+  background-color: rgba(37, 99, 235, 0.2);
+}
+
+.dark .bg-green-100 {
+  background-color: rgba(16, 185, 129, 0.2);
+}
+
+.dark .text-green-700 {
+  color: #34d399;
+}
+
+.dark .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.2);
+}
+
+.dark .text-red-800 {
+  color: #f87171;
+}
+
+.dark .bg-yellow-100 {
+  background-color: rgba(245, 158, 11, 0.2);
+}
+
+.dark .text-yellow-800 {
+  color: #fbbf24;
+}
+
+/* 模态框过渡效果 */
+.modal {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal > div {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* 滑块弹性过渡 */
+@keyframes slideRight {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(12px) scale(1.1); }
+  100% { transform: translateX(10px) scale(1); }
+}
+
+@keyframes slideLeft {
+  0% { transform: translateX(10px); }
+  50% { transform: translateX(-2px) scale(1.1); }
+  100% { transform: translateX(0) scale(1); }
+}
+
+/* 太阳和月亮的变换动画 */
+@keyframes sunToMoon {
+  0% { opacity: 1; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.5; transform: scale(0.5) rotate(45deg); }
+  100% { opacity: 0; transform: scale(0) rotate(90deg); }
+}
+
+@keyframes moonToSun {
+  0% { opacity: 1; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.5; transform: scale(0.5) rotate(-45deg); }
+  100% { opacity: 0; transform: scale(0) rotate(-90deg); }
+}
+
+/* 暗黑模式下滑块位置 */
+.dark #toggleDark div:first-of-type {
+  transform: translateX(10px);
+}
+
+/* 暗黑模式下太阳和月亮效果 */
+.dark #toggleDark .bg-amber-400 {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.dark #toggleDark .bg-indigo-200 {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 动画效果 */
+.dark-mode-active #toggleDark div:first-of-type {
+  animation: slideRight 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.light-mode-active #toggleDark div:first-of-type {
+  animation: slideLeft 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.dark-mode-active #toggleDark .bg-amber-400 {
+  animation: sunToMoon 0.5s forwards;
+}
+
+.dark-mode-active #toggleDark .bg-indigo-200 {
+  animation: moonToSun 0.5s reverse forwards;
+}
+
+.light-mode-active #toggleDark .bg-amber-400 {
+  animation: sunToMoon 0.5s reverse forwards;
+}
+
+.light-mode-active #toggleDark .bg-indigo-200 {
+  animation: moonToSun 0.5s forwards;
+}
+
+/* 为暗黑模式切换按钮添加弹性过渡效果 */
+.ease-spring {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 背景日夜效果 */
+.bg-day-night {
+  background: linear-gradient(to right, rgba(251, 191, 36, 0.8) 0%, rgba(59, 130, 246, 0.8) 100%);
+}
+
+.dark .bg-day-night {
+  background: linear-gradient(to right, rgba(30, 58, 138, 0.8) 0%, rgba(76, 29, 149, 0.8) 100%);
+}
+
+/* 移除按钮和输入框默认的聚焦边框 */
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+}
+
+/* 优化Tailwind按钮的焦点样式 */
+.focus\:ring-1:focus,
+.focus\:ring-2:focus,
+.focus\:ring-blue-500:focus,
+.focus\:ring-offset-2:focus,
+.focus\:ring-white:focus,
+.focus\:ring-indigo-500:focus,
+.focus\:ring-opacity-50:focus,
+.focus\:outline-none:focus {
+  box-shadow: none !important;
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: none !important;
+  --tw-ring-shadow: none !important;
+}
+
+/* 替代聚焦效果 - 使用更微妙的投影 */
+button:focus,
+.btn:focus {
+  transform: translateY(1px);
+  transition: transform 0.1s ease;
+}
+
+/* 自定义输入框聚焦样式 */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: transparent !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: transparent !important;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.15);
+}
+
+/* 确保错误状态不使用亮红色边框 */
+.input-invalid,
+.error input,
+.has-error input,
+.has-error textarea,
+.has-error select {
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  background-color: rgba(239, 68, 68, 0.03) !important;
+}
+
+/* 文件上传动画 */
+@keyframes spinner {
+  to {transform: rotate(360deg);}
+}
+
+.animate-spin-slow {
+  animation: spinner 1.5s linear infinite;
+}
+
+/* 文件卡片悬停效果 */
+.file-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.file-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* 进度条动画 */
+@keyframes progress-bar-stripes {
+  from {
+    background-position: 1rem 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+.animated-progress-bar {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+  animation: progress-bar-stripes 1s linear infinite;
+}
+
+/* 频道列表和子列表样式 */
+.channels-sublist {
+  transition: max-height 0.3s ease, opacity 0.2s ease;
+  will-change: max-height, opacity;
+  overflow: hidden;
+  transform: translateZ(0); /* 启用硬件加速 */
+}
+
+.channel-item {
+  transition: all 0.2s ease;
+}
+
+.channel-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+/* 修复箭头旋转动画 */
+.room-header svg.transform {
+  transform-origin: center;
+  transition: transform 0.2s ease;
+}
+
+/* 确保聊天室项高度稳定 */
+.room-item {
+  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+}
+
+/* 确保内容不要扭曲 */
+.room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  transition: background-color 0.2s ease;
+}
+
+/* 修复按钮变大的问题 */
+button {
+  transition: background-color 0.2s ease, color 0.2s ease !important;
+  transform: none !important;
+  outline: none !important;
+}
+
+button:hover,
+button:active,
+button:focus {
+  transform: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  /* 防止按钮在点击时放大 */
+  scale: 1 !important;
+}
+
+/* 防止所有按钮的变形 */
+.resource-card button:hover,
+.chat-controls button:hover,
+.send-button:hover,
+#viewOnlineUsersBtn:hover,
+#resourceManagementModal button:hover,
+#channelManagementModal button:hover,
+#resourceFormModal button:hover {
+  transform: none !important;
+  scale: 1 !important;
+}
+
+/* 移除所有动画效果 */
+.member-actions button:hover {
+  transform: none !important;
+}
+
+/* 修复Resource Type选择的问题 */
+.resource-type-option {
+  cursor: pointer;
+}
+
+.resource-type-option div {
+  transition: border-color 0.2s ease;
+}
+
+.resource-type-option:hover div {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* 修复按钮变形问题 - 增强版 */
+button, 
+.btn,
+button[type="button"],
+button[type="submit"],
+input[type="button"],
+input[type="submit"] {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease !important;
+  transform: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transform-origin: center center !important;
+  transform-style: preserve-3d !important;
+  backface-visibility: hidden !important;
+  will-change: background-color, color, border-color !important;
+  -webkit-transform: none !important;
+  -moz-transform: none !important;
+  -ms-transform: none !important;
+  -o-transform: none !important;
+  scale: 1 !important;
+}
+
+button:hover, 
+.btn:hover,
+button[type="button"]:hover,
+button[type="submit"]:hover,
+input[type="button"]:hover,
+input[type="submit"]:hover,
+button:active, 
+.btn:active,
+button[type="button"]:active,
+button[type="submit"]:active,
+input[type="button"]:active,
+input[type="submit"]:active,
+button:focus, 
+.btn:focus,
+button[type="button"]:focus,
+button[type="submit"]:focus,
+input[type="button"]:focus,
+input[type="submit"]:focus {
+  transform: none !important;
+  -webkit-transform: none !important;
+  -moz-transform: none !important;
+  -ms-transform: none !important;
+  -o-transform: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  scale: 1 !important;
+}
+
+/* 修复特定按钮的变形问题 */
+.send-button,
+.member-actions button,
+.channel-item button,
+.resource-card button,
+.resource-type-option,
+#viewOnlineUsersBtn,
+#resourceManagementModal button,
+#channelManagementModal button,
+#resourceFormModal button {
+  transform: none !important;
+  scale: 1 !important;
+}
+
+.send-button:hover,
+.member-actions button:hover,
+.channel-item button:hover,
+.resource-card button:hover,
+.resource-type-option:hover,
+#viewOnlineUsersBtn:hover,
+#resourceManagementModal button:hover,
+#channelManagementModal button:hover,
+#resourceFormModal button:hover {
+  transform: none !important;
+  scale: 1 !important;
+}
+
+/* 修复资源类型选择 */
+.resource-type-option {
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+  user-select: none !important;
+}
+
+.resource-type-option div {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+  border: 2px solid transparent !important;
+}
+
+.resource-type-option:hover div {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.resource-type-option.selected div,
+.resource-type-option div.border-blue-500 {
+  border-color: rgba(59, 130, 246, 1) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* 文件预览组件样式 */
+.file-preview {
+  transition: all 0.3s ease;
+}
+
+.file-preview:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 预览动画 */
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes scaleOut {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.95); opacity: 0; }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+.animate-scale-out {
+  animation: scaleOut 0.2s ease-in forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(10px); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.2s ease-in forwards;
+}
+
+@keyframes slideOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-100%); }
+}
+
+.animate-slide-out {
+  animation: slideOut 0.3s ease-in-out forwards;
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  70% { opacity: 1; transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.animate-bounce-in {
+  animation: bounceIn 0.4s ease-out forwards;
+}
+
+/* 图像缩略图效果 */
+.image-thumbnail {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.image-thumbnail:hover img {
+  transform: scale(1.05);
+}
+
+.image-thumbnail img {
+  transition: transform 0.3s ease;
+}
+
+/* 文件类型标签样式 */
+.file-type-tag {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+
+.file-type-tag svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-right: 0.25rem;
+}
+
+/* 下载按钮效果 */
+.download-button {
+  transition: all 0.2s ease;
+}
+
+.download-button:hover {
+  transform: translateY(-1px);
+}
+
+/* 高级搜索相关样式 */
+#advancedSearchPanel {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+}
+
+#advancedSearchPanel.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+/* 搜索样式 */
+.search-active-mode .js-search-highlighted {
+  background: linear-gradient(to bottom, transparent 0%, transparent 40%, rgba(255, 255, 0, 0.3) 40%, rgba(255, 255, 0, 0.3) 60%, transparent 60%, transparent 100%);
+  text-shadow: 0 0 0.5px rgba(0, 0, 0, 0.1);
+  animation: gentle-highlight 2s ease-in-out;
+}
+
+.dark .search-active-mode .js-search-highlighted {
+  background: linear-gradient(to bottom, transparent 0%, transparent 40%, rgba(245, 158, 11, 0.3) 40%, rgba(245, 158, 11, 0.3) 60%, transparent 60%, transparent 100%);
+  text-shadow: 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+@keyframes gentle-highlight {
+  0% { background-position: 0 1.2em; }
+  10% { background-position: 0 0.2em; }
+  90% { background-position: 0 0.2em; }
+  100% { background-position: 0 0.2em; }
+}
+
+/* 搜索导航按钮样式 */
+#searchNavButtons {
+  display: none !important;
+}
+
+/* 搜索按钮悬停提示 */
+#prevResultBtn::before,
+#nextResultBtn::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  white-space: nowrap;
+}
+
+#prevResultBtn:hover::before,
+#nextResultBtn:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 侧边栏搜索样式 */
+.sidebar-search input {
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.sidebar-search input:focus {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 为了区分两个搜索框 */
+.sidebar-search input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.topbar-search input::placeholder {
+  color: rgba(107, 114, 128, 0.5);
+}
+
+/* 删除其他可能有问题的样式 */
+.box-decoration-break,
+.-webkit-box-decoration-break {
+  box-decoration-break: none;
+  -webkit-box-decoration-break: none;
+}

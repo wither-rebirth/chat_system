@@ -1,0 +1,698 @@
+/**
+ * 动画样式表
+ * 包含所有动画效果的样式
+ */
+
+/* ===== 水波效果 ===== */
+/* 水波浪动画 */
+@keyframes wave {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* 水波纹效果 */
+@keyframes ripple-effect {
+  0% {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(5);
+    opacity: 0;
+  }
+}
+
+/* 按钮涟漪效果 */
+@keyframes ripple {
+  from {
+    transform: scale(0);
+    opacity: 1;
+  }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* 雨滴下落效果 */
+@keyframes rain-fall {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(calc(100vh + 50px));
+    opacity: 0;
+  }
+}
+
+/* ===== 文本和元素动画 ===== */
+/* 文字波浪效果 */
+@keyframes text-wave {
+  0% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-5px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(3px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* 渐入效果 */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* 上滑渐入效果 */
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 下滑渐入效果 */
+@keyframes fade-in-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 左滑渐入效果 */
+@keyframes fade-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 右滑渐入效果 */
+@keyframes fade-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 渐出效果 */
+@keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 上滑渐出效果 */
+@keyframes fade-out-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+/* 下滑渐出效果 */
+@keyframes fade-out-down {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+/* 浮动效果 */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* 脉动效果 */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 旋转效果 */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 弹跳效果 */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-20px);
+  }
+  60% {
+    transform: translateY(-10px);
+  }
+}
+
+/* 摇晃效果 */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+/* 抖动效果（用于表单错误等） */
+@keyframes vibrate {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-2px);
+  }
+  40%, 80% {
+    transform: translateX(2px);
+  }
+}
+
+/* 闪烁效果 */
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* 渐变背景动画 */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ===== 加载动画 ===== */
+/* 加载器旋转 */
+@keyframes loader-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 点加载动画 */
+@keyframes dots {
+  0%, 20% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+  80%, 100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+/* 进度条动画 */
+@keyframes progress {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+/* ===== 页面过渡动画 ===== */
+/* 页面入场动画 */
+@keyframes page-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 页面退出动画 */
+@keyframes page-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+/* ===== 动画工具类 ===== */
+/* 淡入动画 */
+.fade-in {
+  animation: fade-in var(--transition-normal) ease forwards;
+}
+
+/* 上滑淡入 */
+.fade-in-up {
+  animation: fade-in-up var(--transition-normal) ease forwards;
+}
+
+/* 下滑淡入 */
+.fade-in-down {
+  animation: fade-in-down var(--transition-normal) ease forwards;
+}
+
+/* 左滑淡入 */
+.fade-in-left {
+  animation: fade-in-left var(--transition-normal) ease forwards;
+}
+
+/* 右滑淡入 */
+.fade-in-right {
+  animation: fade-in-right var(--transition-normal) ease forwards;
+}
+
+/* 浮动动画 */
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* 脉动动画 */
+.pulse-animation {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* 旋转动画 */
+.spin-animation {
+  animation: spin 2s linear infinite;
+}
+
+/* 弹跳动画 */
+.bounce-animation {
+  animation: bounce 2s ease infinite;
+}
+
+/* 抖动动画 */
+.shake-animation {
+  animation: shake 0.6s ease;
+}
+
+/* 闪烁动画 */
+.blink-animation {
+  animation: blink 1.5s infinite;
+}
+
+/* 渐变背景 */
+.gradient-animation {
+  background-size: 200% 200%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+/* 加载中动画 */
+.loading-animation {
+  animation: loader-spin 1s linear infinite;
+}
+
+/* 进度条动画 */
+.progress-animation {
+  animation: progress 2s cubic-bezier(0.1, 0.5, 0.2, 1) forwards;
+}
+
+/* 文字波浪效果 */
+.text-wave {
+  animation: text-wave 1.2s ease;
+}
+
+/* ===== 动画工具类修饰符 ===== */
+/* 动画延迟类 */
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.delay-700 {
+  animation-delay: 0.7s;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
+}
+
+/* 动画速度类 */
+.duration-300 {
+  animation-duration: 0.3s;
+}
+
+.duration-500 {
+  animation-duration: 0.5s;
+}
+
+.duration-700 {
+  animation-duration: 0.7s;
+}
+
+.duration-1000 {
+  animation-duration: 1s;
+}
+
+.duration-1500 {
+  animation-duration: 1.5s;
+}
+
+.duration-2000 {
+  animation-duration: 2s;
+}
+
+/* 动画曲线类 */
+.ease-linear {
+  animation-timing-function: linear;
+}
+
+.ease-in {
+  animation-timing-function: ease-in;
+}
+
+.ease-out {
+  animation-timing-function: ease-out;
+}
+
+.ease-in-out {
+  animation-timing-function: ease-in-out;
+}
+
+.ease-bounce {
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 动画填充模式 */
+.fill-none {
+  animation-fill-mode: none;
+}
+
+.fill-forwards {
+  animation-fill-mode: forwards;
+}
+
+.fill-backwards {
+  animation-fill-mode: backwards;
+}
+
+.fill-both {
+  animation-fill-mode: both;
+}
+
+/* 动画迭代次数 */
+.infinite {
+  animation-iteration-count: infinite;
+}
+
+.once {
+  animation-iteration-count: 1;
+}
+
+.twice {
+  animation-iteration-count: 2;
+}
+
+/* 动画方向 */
+.reverse {
+  animation-direction: reverse;
+}
+
+.alternate {
+  animation-direction: alternate;
+}
+
+.alternate-reverse {
+  animation-direction: alternate-reverse;
+}
+
+/* 页面过渡动画 */
+.page-transition {
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* 页面退出动画 */
+@keyframes slideOutRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes slideOutLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+/* 页面进入动画 */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.slide-out-right {
+  animation: slideOutRight 0.5s forwards ease-in-out;
+}
+
+.slide-out-left {
+  animation: slideOutLeft 0.5s forwards ease-in-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.5s forwards ease-in-out;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.5s forwards ease-in-out;
+}
+
+/* 悬浮动画 */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* 脉冲动画 */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.pulse-animation {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 按钮涟漪效果 */
+@keyframes ripple {
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.ripple-effect {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+  z-index: 1;
+}
+
+/* 按钮发光效果 */
+@keyframes button-glow {
+  0% { opacity: 0; }
+  30% { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+
+.button-glow {
+  position: absolute;
+  inset: -5px;
+  background: radial-gradient(circle at var(--x, center) var(--y, center), rgba(59, 130, 246, 0.5) 0%, transparent 60%);
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  animation: button-glow 1s ease-out;
+}
+
+/* 欢迎返回提示动画 */
+.welcome-back {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  max-width: 300px;
+  z-index: 1000;
+  transform: translateX(120%);
+  transition: transform 0.3s ease;
+  overflow: hidden;
+}
+
+.dark .welcome-back {
+  background: rgba(31, 41, 55, 0.95);
+  color: white;
+}
+
+.welcome-back.show {
+  transform: translateX(0);
+}
+
+.welcome-back-content {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  position: relative;
+}
+
+.welcome-icon {
+  font-size: 1.5rem;
+  margin-right: 10px;
+}
+
+.welcome-text {
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.close-welcome {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.close-welcome:hover {
+  opacity: 1;
+}
+
+/* 页面淡出淡入 */
+body {
+  transition: opacity 0.5s;
+}
+
+body.fade-out {
+  opacity: 0;
+} 

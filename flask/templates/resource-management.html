@@ -1,0 +1,68 @@
+<!-- Resource Management Modal Box -->
+<div id="resourceManagementModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+  <div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden w-[800px] max-h-[85vh] flex flex-col shadow-2xl transform transition-all duration-300 ease-out">
+    <!-- head -->
+    <div class="border-b dark:border-gray-700 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold dark:text-white flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Resource Management
+          </h2>
+          <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm">Manage, share, and organize resources for your team</p>
+        </div>
+        <button onclick="closeResourceManagementModal()" class="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Content area -->
+    <div class="flex-1 overflow-y-auto p-6">
+      <!-- Top Action Bar -->
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-4">
+          <h3 class="text-lg font-semibold dark:text-white">Your Resources</h3>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="font-medium text-gray-900 dark:text-gray-100" id="resourceCount">0</span> resources
+          </div>
+        </div>
+        <button onclick="openAddResourceModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Add Resource
+        </button>
+      </div>
+
+      <!-- Resource list -->
+      <div id="resourcesList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Resource Preview Modal Box -->
+<div id="resourcePreviewModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+  <div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden w-[700px] max-h-[85vh] flex flex-col shadow-2xl transform transition-all duration-300 ease-out">
+    <!-- Preview header -->
+    <div class="border-b dark:border-gray-700 p-6" id="resourcePreviewHeader">
+      <!-- Content will be filled dynamically via JavaScript -->
+    </div>
+
+    <!-- Preview content -->
+    <div class="flex-1 overflow-y-auto p-6" id="resourcePreviewContent">
+      <!-- Content will be filled dynamically via JavaScript -->
+    </div>
+
+    <!-- Preview bottom -->
+    <div class="border-t dark:border-gray-700 p-4 flex justify-end">
+      <button onclick="closeResourcePreview()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+        Close
+      </button>
+    </div>
+  </div>
+</div> 
