@@ -26,44 +26,65 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* 主题过渡效果 */
-.theme-transition {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+/* 优化的主题过渡效果 - 使用CSS变量和更高效的选择器 */
+:root {
+  --theme-transition-duration: 0.2s;
+  --theme-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 暗黑模式切换动画 */
-.dark-mode-active *,
-.light-mode-active * {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+/* 仅对关键元素应用主题过渡 */
+body,
+.theme-transition,
+.bg-white,
+.bg-gray-50,
+.bg-gray-100,
+.bg-gray-200,
+.text-gray-600,
+.text-gray-700,
+.text-gray-800,
+.text-gray-900,
+.border,
+.border-gray-200,
+aside,
+nav,
+.modal-content,
+.dropdown-menu,
+.card,
+input,
+textarea,
+select,
+button {
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
+              color var(--theme-transition-duration) var(--theme-transition-timing),
+              border-color var(--theme-transition-duration) var(--theme-transition-timing),
+              box-shadow var(--theme-transition-duration) var(--theme-transition-timing);
 }
 
-/* 增强深色模式过渡时的视觉效果 */
-.dark-mode-active .bg-white {
-  background-color: #1f2937;
+/* 优化的主题切换动画 - 使用transform代替重绘属性 */
+.theme-switching {
+  position: relative;
+  overflow: hidden;
 }
 
-.light-mode-active .dark\:bg-gray-800 {
-  background-color: #fff;
+.theme-switching::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--theme-overlay-color);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-out;
+  z-index: 9999;
 }
 
-/* 暗黑模式和亮色模式切换时的优化动画 */
-@keyframes fadeToBlack {
-  from { background-color: #ffffff; }
-  to { background-color: #1a202c; }
+.theme-switching.transitioning::before {
+  opacity: 0.03;
 }
 
-@keyframes fadeToWhite {
-  from { background-color: #1a202c; }
-  to { background-color: #ffffff; }
-}
-
-.dark-mode-active body {
-  animation: fadeToBlack 0.3s ease forwards;
-}
-
-.light-mode-active body {
-  animation: fadeToWhite 0.3s ease forwards;
-}
+/* 移除低效的通用选择器和强制动画 */
 
 /* 右侧面板过渡增强 */
 .side-panel {

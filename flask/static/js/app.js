@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+  // Initialize theme settings first for better performance
+  initThemeSettings();
+  
   // Initialize modules
   initThemeToggle();
   initSearch();
@@ -44,77 +47,100 @@ function loadScript(src, callback) {
   document.head.appendChild(script);
 }
 
-// Theme toggle functionality
+// 优化的主题切换功能
 function initThemeToggle() {
   const toggleDark = document.getElementById('toggleDark');
   if (toggleDark) {
-    toggleDark.addEventListener('click', function() {
-      // Smooth transition effect
-      document.body.style.transition = 'background-color 0.2s ease, color 0.2s ease';
+    // 添加优化类以减少重绘
+    toggleDark.classList.add('theme-optimized');
+    
+    toggleDark.addEventListener('click', function(e) {
+      // 防抖处理
+      if (toggleDark.dataset.switching === 'true') return;
+      toggleDark.dataset.switching = 'true';
       
-      // Get current mode
-      const isDark = document.documentElement.classList.contains('dark');
+      // 添加按钮按压动画
+      toggleDark.classList.add('theme-button-active');
+      setTimeout(() => {
+        toggleDark.classList.remove('theme-button-active');
+      }, 150);
       
-      // Toggle dark mode class
-      document.documentElement.classList.toggle('dark');
+      // 使用高效的主题切换
+      performThemeSwitch();
       
-      // Add optimized animation effects
-      const darkElements = document.querySelectorAll('.theme-transition');
-      darkElements.forEach(el => {
-        el.style.transition = 'background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease';
-        setTimeout(() => {
-          el.style.transition = '';
-        }, 500);
-      });
-      
-      // Add transition effects for modals and panels
-      const panels = document.querySelectorAll('.side-panel, .modal, .dropdown-menu');
-      panels.forEach(panel => {
-        panel.style.transition = 'background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease';
-        setTimeout(() => {
-          panel.style.transition = '';
-        }, 500);
-      });
-      
-      // Save user theme preference
-      if (document.documentElement.classList.contains('dark')) {
-        localStorage.setItem('theme', 'dark');
-        
-        // Apply slider animation
-        document.body.classList.remove('light-mode-active');
-        document.body.classList.add('dark-mode-active');
-        setTimeout(() => {
-          document.body.classList.remove('dark-mode-active');
-        }, 600);
-      } else {
-        localStorage.setItem('theme', 'light');
-        
-        // Apply slider animation
-        document.body.classList.remove('dark-mode-active');
-        document.body.classList.add('light-mode-active');
-        setTimeout(() => {
-          document.body.classList.remove('light-mode-active');
-        }, 600);
-      }
+      // 重置防抖标志
+      setTimeout(() => {
+        toggleDark.dataset.switching = 'false';
+      }, 250);
     });
   }
+}
+
+// 高性能主题切换实现
+function performThemeSwitch() {
+  const htmlElement = document.documentElement;
+  const isDarkMode = htmlElement.classList.contains('dark');
   
+  // 添加切换状态类来触发平滑过渡
+  document.body.classList.add('theme-switching');
+  
+  // 使用requestAnimationFrame确保流畅动画
+  requestAnimationFrame(() => {
+    // 切换主题类
+    htmlElement.classList.toggle('dark');
+    
+    // 保存用户偏好
+    const newTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
+    localStorage.setItem('theme', newTheme);
+    
+    // 更新CSS变量（如果需要）
+    updateThemeVariables(newTheme);
+    
+    // 触发自定义事件
+    const themeChangeEvent = new CustomEvent('themechange', {
+      detail: { theme: newTheme, previousTheme: isDarkMode ? 'dark' : 'light' }
+    });
+    document.dispatchEvent(themeChangeEvent);
+    
+    // 移除切换状态类
+    setTimeout(() => {
+      document.body.classList.remove('theme-switching');
+    }, 200);
+  });
+}
+
+// 更新主题相关CSS变量
+function updateThemeVariables(theme) {
+  const root = document.documentElement;
+  if (theme === 'dark') {
+    root.style.setProperty('--theme-overlay-color', 'rgba(0, 0, 0, 0.1)');
+  } else {
+    root.style.setProperty('--theme-overlay-color', 'rgba(255, 255, 255, 0.1)');
+  }
+}
+
+// 初始化主题设置
+function initThemeSettings() {
   // Check locally stored theme preference
   const savedTheme = localStorage.getItem('theme');
   
   // Apply saved theme or default theme
   if (savedTheme === 'dark') {
     document.documentElement.classList.add('dark');
+    updateThemeVariables('dark');
   } else if (savedTheme === 'light') {
     document.documentElement.classList.remove('dark');
+    updateThemeVariables('light');
   } else if (savedTheme === null) {
     // If no saved preference, check system preference
     const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (prefersDarkMode) {
       document.documentElement.classList.add('dark');
+      updateThemeVariables('dark');
       localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      updateThemeVariables('light');
       localStorage.setItem('theme', 'light');
     }
   }
@@ -122,13 +148,14 @@ function initThemeToggle() {
   // Listen for system theme changes
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
     // Only follow system theme if user hasn't explicitly set a preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === null) {
-      document.body.style.transition = 'background-color 0.2s ease, color 0.2s ease';
+    const currentSavedTheme = localStorage.getItem('theme');
+    if (currentSavedTheme === null) {
       if (e.matches) {
         document.documentElement.classList.add('dark');
+        updateThemeVariables('dark');
       } else {
         document.documentElement.classList.remove('dark');
+        updateThemeVariables('light');
       }
     }
   });

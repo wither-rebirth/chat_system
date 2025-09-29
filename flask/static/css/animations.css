@@ -695,4 +695,91 @@ body {
 
 body.fade-out {
   opacity: 0;
+}
+
+/* ===== 主题切换优化动画 ===== */
+/* 高性能主题切换动画 */
+@keyframes theme-switch-overlay {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.05;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
+
+/* 主题切换时的流畅过渡 */
+.theme-switching {
+  position: relative;
+}
+
+.theme-switching::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--theme-overlay-color, rgba(0, 0, 0, 0.02));
+  animation: theme-switch-overlay 0.2s ease-out;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* 主题切换按钮动画 */
+@keyframes theme-button-press {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.theme-button-active {
+  animation: theme-button-press 0.15s ease-out;
+}
+
+/* 主题切换时的滑动效果 */
+@keyframes theme-slide-dark {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(100% - 24px));
+  }
+}
+
+@keyframes theme-slide-light {
+  0% {
+    transform: translateX(calc(100% - 24px));
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* 夜间模式切换按钮内部滑块动画 */
+.dark #toggleDark > div:last-child {
+  animation: theme-slide-dark 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+#toggleDark > div:last-child {
+  animation: theme-slide-light 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 减少重绘的优化类 */
+.theme-optimized {
+  will-change: background-color, color, border-color;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 } 

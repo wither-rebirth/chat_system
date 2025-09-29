@@ -3,72 +3,30 @@
  * Contains functionality and utility functions shared by all pages
  */
 
-// Theme management
+// 简化的主题管理器 - 与app.js协调工作
 const ThemeManager = {
-  // Initialize theme
-  init: function() {
-    // Check locally stored theme
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-      document.documentElement.classList.add('dark-mode');
-    }
-    
-    // Initialize theme toggle button
-    this.setupThemeToggle();
-  },
-  
-  // Setup theme toggle button
-  setupThemeToggle: function() {
-    const themeToggleBtn = document.getElementById('themeToggle');
-    if (themeToggleBtn) {
-      // Set initial state
-      this.updateToggleButton(themeToggleBtn);
-      
-      // Add click event
-      themeToggleBtn.addEventListener('click', function(e) {
-        ThemeManager.toggleTheme();
-        // Add button ripple effect
-        Animations.createRipple(e, this);
-      });
-    }
-  },
-  
-  // Toggle theme
-  toggleTheme: function() {
-    const htmlElement = document.documentElement;
-    const isDarkMode = htmlElement.classList.toggle('dark-mode');
-    
-    // Save to local storage
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-    
-    // Update all theme button states
-    const themeToggles = document.querySelectorAll('[id^="themeToggle"]');
-    themeToggles.forEach(btn => this.updateToggleButton(btn));
-    
-    // Trigger theme change event
-    const themeChangeEvent = new CustomEvent('themechange', {
-      detail: { theme: isDarkMode ? 'dark' : 'light' }
-    });
-    document.dispatchEvent(themeChangeEvent);
-  },
-  
-  // Update theme toggle button state
-  updateToggleButton: function(button) {
-    if (!button) return;
-    
-    const isDarkMode = document.documentElement.classList.contains('dark-mode');
-    const moonIcon = button.querySelector('.moon-icon');
-    const sunIcon = button.querySelector('.sun-icon');
-    
-    if (moonIcon && sunIcon) {
-      moonIcon.classList.toggle('hidden', isDarkMode);
-      sunIcon.classList.toggle('hidden', !isDarkMode);
-    }
-  },
-  
-  // Get current theme
+  // 获取当前主题
   getCurrentTheme: function() {
-    return document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light';
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  },
+  
+  // 检查是否为暗黑模式
+  isDarkMode: function() {
+    return document.documentElement.classList.contains('dark');
+  },
+  
+  // 监听主题变化事件
+  onThemeChange: function(callback) {
+    if (typeof callback === 'function') {
+      document.addEventListener('themechange', callback);
+    }
+  },
+  
+  // 移除主题变化监听器
+  offThemeChange: function(callback) {
+    if (typeof callback === 'function') {
+      document.removeEventListener('themechange', callback);
+    }
   }
 };
 
